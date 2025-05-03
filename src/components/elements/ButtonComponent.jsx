@@ -55,7 +55,7 @@ export default function ButtonComponent({
 
 	return (
 		<button
-			type="button"
+			type={onClick ? 'button' : 'submit'}
 			onClick={onClick}
 			className={classes}
 			disabled={disabled || loading}

@@ -13,6 +13,7 @@ export default function HabitForm({ onCreate }) {
 	);
 	const [endDate, setEndDate] = useState('');
 	const [error, setError] = useState(null);
+	const [message, setMessage] = useState(null);
 
 	const validateForm = () => {
 		if (!name || !frequency || !startDate) {
@@ -70,9 +71,18 @@ export default function HabitForm({ onCreate }) {
 			if (onCreate) {
 				onCreate(); // allow parent to refresh list or navigate
 			}
+
+			setMessage({ type: 'success', text: 'Habit created successfully!' });
+			setTimeout(() => {
+				setMessage(null);
+			}, 3000);
 		} catch (e) {
 			console.error(e);
 			setError('Failed to create habit. Please try again.');
+			setMessage({ type: 'error', text: 'Error saving habit' });
+			setTimeout(() => {
+				setMessage(null);
+			}, 3000);
 		}
 	};
 
@@ -82,6 +92,18 @@ export default function HabitForm({ onCreate }) {
 			className="flex flex-col gap-y-6 w-full my-4 rounded border border-gray-50 p-2"
 		>
 			{error && <div className="text-red-600 text-sm">{{ error }}</div>}
+
+			{message && (
+				<div
+					className={`text-sm px-4 py-2 rounded-md ${
+						message.type === 'success'
+							? 'bg-green-100 text-green-800'
+							: 'bg-red-100 text-red-800'
+					}`}
+				>
+					{message.text}
+				</div>
+			)}
 
 			<label>
 				<span className="form-label">Habit Name *</span>
