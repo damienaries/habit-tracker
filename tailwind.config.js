@@ -3,5 +3,5 @@ export default {
 	theme: {
 		extend: {},
 	},
-	plugins: [],
+	plugins: ['@tailwindcss/postcss'],
 };

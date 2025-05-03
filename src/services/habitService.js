@@ -6,6 +6,9 @@ export async function createHabit({
 	frequency,
 	startDate,
 	endDate = null,
+	customInterval = null,
+	timesPerPeriod = null,
+	details = '',
 }) {
 	if (!name || !frequency || !startDate) {
 		throw new Error('Name, frequency, and start date are required');
@@ -16,6 +19,9 @@ export async function createHabit({
 		frequency,
 		startDate,
 		endDate,
+		customInterval,
+		timesPerPeriod,
+		details,
 		streak: 0,
 		completedDays: 0,
 	});

@@ -7,7 +7,7 @@ import CompletedView from './pages/CompletedView';
 export default function App() {
 	return (
 		<Router>
-			<div className="w-full min-h-screen flex flex-col">
+			<div className="w-screen min-h-screen">
 				{/* Centered container */}
 				<main className="flex-1 mx-auto w-full max-w-[800px]">
 					<Routes>
