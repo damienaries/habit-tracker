@@ -1,3 +1,7 @@
+/* Base styles */
+h1 {
+	@apply font-bold text-2xl lg:text-3xl leading-4;
+}
 .text-body {
 	@apply text-base leading-relaxed text-gray-800;
 }

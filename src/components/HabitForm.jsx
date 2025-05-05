@@ -47,8 +47,8 @@ export default function HabitForm({ onCreate }) {
 			await createHabit({
 				name,
 				frequency,
-				startDate,
-				endDate: endDate || null,
+				startDate: new Date(startDate),
+				endDate: endDate ? new Date(endDate) : null,
 				details,
 				customInterval:
 					frequency === 'every_n_days' ? parseInt(customInterval, 10) : null,
