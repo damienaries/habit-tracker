@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { getHabitsForDate } from '../services/habitLogic';
+import HabitCard from './HabitCard';
 
 function formatDateTitle(date) {
 	return new Intl.DateTimeFormat('en-US', {
+		weekday: 'long',
 		month: 'long',
 		day: 'numeric',
-		year: 'numeric',
 	}).format(date);
 }
 
@@ -22,7 +23,7 @@ export default function DayCard({ date }) {
 	});
 
 	return (
-		<article className="bg-white shadow-md rounded-lg p-4 mb-6 w-full max-w-2xl mx-auto">
+		<article className="bg-white border border-gray-100 shadow-md rounded-lg p-4 mb-6 w-full max-w-2xl mx-auto">
 			<h2 className="text-lg font-semibold mb-2">{formatDateTitle(date)}</h2>
 
 			{isLoading && <p className="text-body-muted">Loading...</p>}
@@ -33,14 +34,7 @@ export default function DayCard({ date }) {
 			) : (
 				<ul className="space-y-2">
 					{habits?.map((habit) => (
-						<li key={habit.id} className="p-4 rounded-md bg-gray-50 shadow-sm">
-							<div className="font-medium text-gray-800">{habit.name}</div>
-							{habit.details && (
-								<div className="text-sm text-gray-500 mt-1">
-									{habit.details}
-								</div>
-							)}
-						</li>
+						<HabitCard key={habit.id} habit={habit} date={date} />
 					))}
 				</ul>
 			)}

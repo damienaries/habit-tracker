@@ -10,7 +10,7 @@ export default function ButtonComponent({
 	children,
 }) {
 	const baseclasses =
-		'inline-flex items-center justify-center gap-6 font-medium text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-md';
+		'inline-flex items-center justify-center gap-6 font-medium text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-md cursor-pointer';
 
 	const sizeClasses = {
 		sm: 'text-sm px-3 py-1.5',
