@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TabNavigation from './components/TabNavigation';
 import Home from './pages/Home';
 import CreateHabitView from './pages/CreateHabitView';
-import CompletedView from './pages/CompletedView';
+import AllHabitsView from './pages/AllHabitsView';
 
 export default function App() {
 	return (
@@ -13,7 +13,7 @@ export default function App() {
 					<Routes>
 						<Route path="/" element={<Home />} />
 						<Route path="/create" element={<CreateHabitView />} />
-						<Route path="/completed" element={<CompletedView />} />
+						<Route path="/habits" element={<AllHabitsView />} />
 					</Routes>
 				</main>
 

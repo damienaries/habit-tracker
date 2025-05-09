@@ -36,7 +36,7 @@ export default function HabitCard({ habit, date }) {
 
 	return (
 		<div className={`p-3 rounded-md w-full space-y-2 ${bgClass}`}>
-			<div class="flex justify-between items-center">
+			<div className="flex justify-between items-center">
 				<div className="font-medium">{habit.name}</div>
 				<div className="text-xs text-gray-500 flex items-center gap-1">
 					<span style={fireStyle}>🔥</span>

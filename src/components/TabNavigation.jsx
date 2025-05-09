@@ -14,8 +14,8 @@ export default function TabNavigation() {
 			<NavLink to="/create" className={getClassName}>
 				➕<span>Create</span>
 			</NavLink>
-			<NavLink to="/completed" className={getClassName}>
-				✅<span>Completed</span>
+			<NavLink to="/habits" className={getClassName}>
+				✅<span>View habits</span>
 			</NavLink>
 		</nav>
 	);

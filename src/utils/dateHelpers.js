@@ -17,3 +17,11 @@ export function getEndOfWeek(date) {
 export function isSameDay(date1, date2) {
 	return new Date(date1).toDateString() === new Date(date2).toDateString();
 }
+
+export function formatDateTitle(date) {
+	return new Intl.DateTimeFormat('en-US', {
+		weekday: 'long',
+		month: 'long',
+		day: 'numeric',
+	}).format(date);
+}

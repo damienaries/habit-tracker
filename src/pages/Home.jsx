@@ -12,7 +12,7 @@ export default function Home() {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
-	const [dates, _] = useState(() => [
+	const [dates, setDates] = useState(() => [
 		generateDateOffset(today, -2),
 		generateDateOffset(today, -1),
 		generateDateOffset(today, 0), // today
@@ -44,6 +44,7 @@ export default function Home() {
 					'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
 			}}
 		>
+			<h1 className="text-lg mb-4 text-center font-semibold"></h1>
 			{dates.map((date) => {
 				const isToday = date.toDateString() === new Date().toDateString();
 
