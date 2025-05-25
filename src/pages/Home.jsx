@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import DayCard from '../components/DayCard';
+import DayCardWrapper from '../components/DayCardWrapper';
 import { useInView } from 'react-intersection-observer';
 import { useQueryClient } from '@tanstack/react-query';
+import { getUniqueDateIdentifier } from '../utils/dateHelpers';
 
 function generateDateOffset(baseDate, offset) {
 	const date = new Date(baseDate);
@@ -65,7 +67,7 @@ export default function Home() {
 	// Scroll to today's card on mount
 	useEffect(() => {
 		if (todayRef.current) {
-			todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}, []);
 
@@ -86,35 +88,21 @@ export default function Home() {
 			<div
 				ref={scrollContainerRef}
 				className="h-[calc(100vh-5rem)] overflow-y-scroll snap-y snap-mandatory px-4 py-6 flex flex-col gap-4 items-center relative scroll-smooth"
-				style={{
-					maskImage:
-						'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
-					WebkitMaskImage:
-						'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
-				}}
 			>
 				{/* Top loading trigger */}
 				<div ref={topRef} className="h-4 w-full" />
 
 				{/* Render day cards */}
-				{dates.map((date) => {
-					const isToday =
-						date.toISOString().split('T')[0] ===
-						today.toISOString().split('T')[0];
-					return (
-						<div
-							key={date.toISOString().split('T')[0]}
-							ref={isToday ? todayRef : null}
-							className="w-full transform transition-all duration-300"
-							style={{
-								transform: `scale(${isToday ? 1 : 0.95})`,
-								opacity: isToday ? 1 : 0.8,
-							}}
-						>
-							<DayCard date={date} />
-						</div>
-					);
-				})}
+				{dates.map((date) => (
+					<DayCardWrapper
+						key={getUniqueDateIdentifier(date)}
+						date={date}
+						today={today}
+						todayRef={todayRef}
+					>
+						<DayCard date={date} />
+					</DayCardWrapper>
+				))}
 
 				{/* Bottom loading trigger */}
 				<div ref={bottomRef} className="h-4 w-full" />

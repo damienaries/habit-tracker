@@ -32,7 +32,7 @@ export default function DayCard({ date }) {
 			{error && <p className="text-sm text-red-600">Error loading habits.</p>}
 
 			{habits?.length === 0 && !isLoading ? (
-				<p className="text-sm text-gray-400">No habits scheduled.</p>
+				<p className="text-sm text-gray-400">Nothing scheduled.</p>
 			) : (
 				<div className="space-y-2">
 					{habits?.map((habit) => (

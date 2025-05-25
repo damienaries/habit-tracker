@@ -25,3 +25,7 @@ export function formatDateTitle(date) {
 		day: 'numeric',
 	}).format(date);
 }
+
+export function getUniqueDateIdentifier(date) {
+	return new Date(date).toISOString().split('T')[0];
+}
