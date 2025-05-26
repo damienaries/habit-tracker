@@ -6,7 +6,7 @@ import CreateHabitView from './pages/CreateHabitView';
 import AllHabitsView from './pages/AllHabitsView';
 
 const routes = [
-	{ path: '/', element: <Home />, title: 'Home' },
+	{ path: '/', element: <Home />, title: 'Streaks' },
 	{ path: '/create', element: <CreateHabitView />, title: 'Create Habit' },
 	{ path: '/habits', element: <AllHabitsView />, title: 'All Habits' },
 ];

@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
-
-// todo add icons to the tab navigation instead of emoji
+import Icon from './icons/Icon';
 
 export default function TabNavigation() {
 	const getClassName = ({ isActive }) =>
@@ -9,13 +8,16 @@ export default function TabNavigation() {
 	return (
 		<nav className="w-full max-w-[800px] fixed bottom-0 left-0 bg-white text-gray-900 flex justify-around items-center h-20">
 			<NavLink to="/" className={getClassName} end>
-				🏠<span>Home</span>
+				<Icon icon="home" color="#6B7280" size="md" />
+				<span className="text-xs mt-1">Home</span>
 			</NavLink>
 			<NavLink to="/create" className={getClassName}>
-				➕<span>Create</span>
+				<Icon icon="plus-circle" color="#6B7280" size="md" />
+				<span className="text-xs mt-1">Create</span>
 			</NavLink>
 			<NavLink to="/habits" className={getClassName}>
-				✅<span>View habits</span>
+				<Icon icon="list-bullet" color="#6B7280" size="md" />
+				<span className="text-xs mt-1">Streaks</span>
 			</NavLink>
 		</nav>
 	);
