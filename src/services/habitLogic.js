@@ -1,36 +1,39 @@
-import { getStartOfWeek, getEndOfWeek } from '../utils/dateHelpers';
-import { db } from '../db/habitDb';
+import { db, shouldShowHabitToday } from '../db/habitDb';
 
-export async function getHabitsForDate(date = new Date()) {
-	const allHabits = await db.habits.toArray();
-	const completions = await db.completions.toArray();
+function getUTCDateString(date) {
+	return new Date(date).toISOString().slice(0, 10);
+}
 
-	const startOfWeek = getStartOfWeek(date);
-	const endOfWeek = getEndOfWeek(date);
+export async function getHabitsForDate(date) {
+	// Ensure date is at midnight
+	const cardDate = new Date(date);
+	cardDate.setHours(0, 0, 0, 0);
+	const cardDateStr = getUTCDateString(cardDate);
 
-	return allHabits.filter((habit) => {
-		const start = habit.startDate;
-		const end = habit.endDate ? habit.endDate : null;
-		const isInRange = date >= start && (!end || date <= end);
+	const habits = await db.habits.toArray();
+	const activeHabits = [];
 
-		if (!isInRange) return false;
+	for (const habit of habits) {
+		const startDate = new Date(habit.startDate);
+		const startDateStr = getUTCDateString(startDate);
 
-		const completionsForHabit = completions.filter(
-			(completion) => completion.habitId === habit.id
-		);
+		const endDate = habit.endDate ? new Date(habit.endDate) : null;
+		const endDateStr = endDate ? getUTCDateString(endDate) : null;
 
-		if (habit.frequency === 'daily') {
-			return true;
+		// Check if habit is active on this date (compare only date portion in UTC)
+		if (
+			cardDateStr < startDateStr ||
+			(endDateStr && cardDateStr > endDateStr)
+		) {
+			continue;
 		}
 
-		if (habit.frequency === 'weekly' && habit.timesPerPeriod) {
-			const countThisWeek = completionsForHabit.filter((completion) => {
-				return completion.date >= startOfWeek && completion.date <= endOfWeek;
-			}).length;
-
-			return countThisWeek < habit.timesPerPeriod;
+		// Check if habit should be shown based on frequency and completions
+		const shouldShow = shouldShowHabitToday(habit, cardDate);
+		if (shouldShow) {
+			activeHabits.push(habit);
 		}
+	}
 
-		return false;
-	});
+	return activeHabits;
 }
