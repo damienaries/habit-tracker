@@ -95,3 +95,55 @@ export async function toggleHabitCompletion(habit, date) {
 		});
 	}
 }
+// DB HELPER FUNCTIONS
+
+export async function dbClear() {
+	await db.habits.clear();
+	console.log('🧹 Database cleared');
+}
+
+export async function dbFreshSeed() {
+	await dbClear();
+
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const sampleHabits = [
+		{
+			name: 'Morning Meditation',
+			frequency: 'daily',
+			startDate: today,
+			details: '10 minutes of mindfulness',
+			streak: 3,
+			completedDates: [today],
+		},
+		{
+			name: 'Exercise',
+			frequency: 'weekly',
+			timesPerPeriod: 3,
+			startDate: today,
+			details: '30 minutes of cardio or strength training',
+			streak: 2,
+			weeklyCompletions: [
+				new Date(today.getTime() - 24 * 60 * 60 * 1000), // yesterday
+			],
+		},
+		{
+			name: 'Read',
+			frequency: 'daily',
+			startDate: today,
+			details: 'Read for 20 minutes',
+			streak: 5,
+			completedDates: [],
+		},
+	];
+
+	await db.habits.bulkAdd(sampleHabits);
+	console.log('🌱 Database reset with sample data');
+}
+
+// Attach to window in development for easy access
+if (import.meta.env.DEV) {
+	window.dbClear = dbClear;
+	window.dbFreshSeed = dbFreshSeed;
+}
