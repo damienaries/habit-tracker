@@ -1,5 +1,4 @@
 import Dexie from 'dexie';
-import { isSameDay } from '../utils/dateHelpers';
 
 export const db = new Dexie('HabitTrackerDB');
 
@@ -10,11 +9,21 @@ db.version(1).stores({
 
 // Helper to get start of week (Monday)
 export function getStartOfWeek(date) {
+	// Create a new date object and set to midnight
 	const d = new Date(date);
-	const day = d.getDay();
-	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-	d.setDate(diff);
 	d.setHours(0, 0, 0, 0);
+
+	// Get the day of week (0 = Sunday, 1 = Monday, etc.)
+	const day = d.getDay();
+
+	// Calculate days to subtract to get to Monday
+	// If Sunday (0), subtract 6 days to get to last Monday
+	// Otherwise, subtract (day - 1) days to get to this week's Monday
+	const daysToSubtract = day === 0 ? 6 : day - 1;
+
+	// Set to Monday
+	d.setDate(d.getDate() - daysToSubtract);
+
 	return d;
 }
 
@@ -26,22 +35,36 @@ export function getWeeklyCompletions(habit, date) {
 
 	return (habit.weeklyCompletions || []).filter((completion) => {
 		const completionDate = new Date(completion);
-		return completionDate >= weekStart && completionDate < weekEnd;
+		// Set both dates to midnight UTC for consistent comparison
+		completionDate.setUTCHours(0, 0, 0, 0);
+		const startUTC = new Date(weekStart);
+		startUTC.setUTCHours(0, 0, 0, 0);
+		const endUTC = new Date(weekEnd);
+		endUTC.setUTCHours(0, 0, 0, 0);
+
+		return completionDate >= startUTC && completionDate < endUTC;
 	});
 }
 
 // Check if a habit should be shown today
-export function shouldShowHabitToday(habit, date) {
+export function shouldShowHabitToday(habit, date, referenceDate = new Date()) {
 	if (habit.frequency !== 'weekly' || !habit.timesPerPeriod) {
 		return true;
 	}
 
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const isPast = date < today;
+	// Set both dates to midnight UTC for consistent comparison
+	const today = new Date(referenceDate);
+	today.setUTCHours(0, 0, 0, 0);
+	const checkDate = new Date(date);
+	checkDate.setUTCHours(0, 0, 0, 0);
+	const isPast = checkDate < today;
 
 	const completions = habit.weeklyCompletions || [];
-	const completedToday = completions.some((d) => isSameDay(new Date(d), date));
+	const completedToday = completions.some((d) => {
+		const completionDate = new Date(d);
+		completionDate.setUTCHours(0, 0, 0, 0);
+		return completionDate.getTime() === checkDate.getTime();
+	});
 
 	// Get completions for the week of 'date'
 	const weekCompletions = getWeeklyCompletions(habit, date);
@@ -51,8 +74,10 @@ export function shouldShowHabitToday(habit, date) {
 		// For past days, show only if completed that day
 		return completedToday;
 	} else {
-		// For today/future, show only if weekly target not yet met
-		return completionsThisWeek < habit.timesPerPeriod;
+		// For today/future, show if:
+		// 1. Weekly target not yet met, OR
+		// 2. This specific day was completed
+		return completionsThisWeek < habit.timesPerPeriod || completedToday;
 	}
 }
 
