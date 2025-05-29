@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import CreateHabitView from './pages/CreateHabitView';
 import AllHabitsView from './pages/AllHabitsView';
+import { UpdatePrompt } from './components/UpdatePrompt';
 
 const routes = [
 	{ path: '/', element: <Home />, title: 'Streaks' },
@@ -29,6 +30,8 @@ export default function App() {
 
 				{/* Bottom tab navigation */}
 				<TabNavigation />
+
+				<UpdatePrompt />
 			</div>
 		</Router>
 	);
