@@ -42,10 +42,12 @@ export default defineConfig({
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
 				clientsClaim: true,
 				skipWaiting: true,
+				cleanupOutdatedCaches: true,
 			},
 			devOptions: {
 				enabled: true,
 			},
+			version: '1.0.0',
 		}),
 	],
 });
