@@ -22,13 +22,10 @@ export default function Header({ routes }) {
 					onClick={toggleSettings}
 					className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center gap-4 pr-4"
 				>
-					<Icon icon="cog" size="md" />
+					<Icon icon="cog" size="lg" />
 				</div>
 			</header>
-			<Settings
-				isOpen={isSettingsOpen}
-				onClose={() => setIsSettingsOpen(false)}
-			/>
+			<Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 		</>
 	);
 }

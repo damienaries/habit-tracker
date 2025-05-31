@@ -5,6 +5,9 @@ import Home from './pages/Home';
 import CreateHabitView from './pages/CreateHabitView';
 import AllHabitsView from './pages/AllHabitsView';
 import { UpdatePrompt } from './components/UpdatePrompt';
+import { UserProvider } from './contexts/UserContext';
+import { useUser } from './contexts/UserContext';
+import Onboarding from './components/Onboarding';
 
 const routes = [
 	{ path: '/', element: <Home />, title: 'Streaks' },
@@ -12,7 +15,13 @@ const routes = [
 	{ path: '/habits', element: <AllHabitsView />, title: 'All Habits' },
 ];
 
-export default function App() {
+function AppContent() {
+	const { user } = useUser();
+
+	if (!user) {
+		return <Onboarding />;
+	}
+
 	return (
 		<Router>
 			<div className="w-screen min-h-screen flex flex-col">
@@ -34,5 +43,13 @@ export default function App() {
 				<UpdatePrompt />
 			</div>
 		</Router>
+	);
+}
+
+export default function App() {
+	return (
+		<UserProvider>
+			<AppContent />
+		</UserProvider>
 	);
 }

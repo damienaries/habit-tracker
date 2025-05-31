@@ -1,38 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Icon from './icons/Icon';
+import ButtonComponent from './elements/ButtonComponent';
+import ToggleButton from './elements/ToggleButton';
+import { useUser } from '../contexts/UserContext';
 
 export default function Settings({ isOpen, onClose }) {
+	const { user, updateUserSettings } = useUser();
 	const [settings, setSettings] = useState({
-		notificationTime: '09:00',
-		theme: 'light',
-		streakReminders: true,
-		weeklyReport: true,
-		weekStartsOn: 'monday',
-		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		morningNotifications: user?.settings?.morningNotifications ?? true,
+		eveningNotifications: user?.settings?.eveningNotifications ?? true,
 	});
 
-	// Handle escape key press
-	useEffect(() => {
-		function handleEscape(e) {
-			if (e.key === 'Escape') onClose();
-		}
-		if (isOpen) {
-			document.addEventListener('keydown', handleEscape);
-		}
-		return () => document.removeEventListener('keydown', handleEscape);
-	}, [isOpen, onClose]);
+	const handleSettingChange = (key, value) => {
+		setSettings(prev => ({ ...prev, [key]: value }));
+		updateUserSettings({ [key]: value });
+	};
 
-	// Prevent body scroll when settings is open
-	useEffect(() => {
-		if (isOpen) {
-			document.body.style.overflow = 'hidden';
-		} else {
-			document.body.style.overflow = 'unset';
-		}
-		return () => {
-			document.body.style.overflow = 'unset';
-		};
-	}, [isOpen]);
+	// Format the creation date
+	const formatDate = dateString => {
+		return new Date(dateString).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric',
+		});
+	};
 
 	return (
 		<>
@@ -58,139 +49,50 @@ export default function Settings({ isOpen, onClose }) {
 							onClick={onClose}
 							className="p-2 hover:bg-gray-100 rounded-full transition-colors"
 						>
-							<Icon icon="x" size="md" />
+							<Icon icon="x" size="lg" />
 						</button>
 					</div>
 
 					{/* Settings Content */}
 					<div className="flex-1 overflow-y-auto p-4 space-y-6">
-						{/* Notification Time */}
-						<div className="space-y-2">
-							<label className="block text-sm font-medium text-gray-700">
-								Daily Reminder Time
-							</label>
-							<input
-								type="time"
-								value={settings.notificationTime}
-								onChange={(e) =>
-									setSettings({ ...settings, notificationTime: e.target.value })
-								}
-								className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						{/* User Profile Section */}
+						<div className="pb-4 border-b border-gray-200">
+							<h3 className="text-xl text-center font-medium text-gray-900">{user?.name}</h3>
+							<p className="text-center text-sm text-gray-500 mt-1">
+								Created on {formatDate(user?.createdAt)}
+							</p>
+						</div>
+
+						{/* Morning Notifications */}
+						<div className="flex items-center justify-between py-2">
+							<div>
+								<label className="block text-lg font-medium text-gray-700">Morning Recap</label>
+								<p className="text-gray-500">Daily summary of your habits at 9AM</p>
+							</div>
+							<ToggleButton
+								checked={settings.morningNotifications}
+								onChange={e => handleSettingChange('morningNotifications', e.target.checked)}
 							/>
 						</div>
 
-						{/* Theme Selection */}
-						<div className="space-y-2">
-							<label className="block text-sm font-medium text-gray-700">
-								Theme
-							</label>
-							<select
-								value={settings.theme}
-								onChange={(e) =>
-									setSettings({ ...settings, theme: e.target.value })
-								}
-								className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							>
-								<option value="light">Light</option>
-								<option value="dark">Dark</option>
-								<option value="system">System</option>
-							</select>
-						</div>
-
-						{/* Streak Reminders */}
-						<div className="flex items-center justify-between">
+						{/* Evening Notifications */}
+						<div className="flex items-center justify-between py-2">
 							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Streak Reminders
-								</label>
-								<p className="text-sm text-gray-500">
-									Get notified when you're about to break a streak
-								</p>
+								<label className="block text-lg font-medium text-gray-700">Evening Reminder</label>
+								<p className="text-gray-500">Reminder to complete your habits at 9PM</p>
 							</div>
-							<label className="relative inline-flex items-center cursor-pointer">
-								<input
-									type="checkbox"
-									checked={settings.streakReminders}
-									onChange={(e) =>
-										setSettings({
-											...settings,
-											streakReminders: e.target.checked,
-										})
-									}
-									className="sr-only peer"
-								/>
-								<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-							</label>
-						</div>
-
-						{/* Weekly Report */}
-						<div className="flex items-center justify-between">
-							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Weekly Progress Report
-								</label>
-								<p className="text-sm text-gray-500">
-									Receive a weekly summary of your habits
-								</p>
-							</div>
-							<label className="relative inline-flex items-center cursor-pointer">
-								<input
-									type="checkbox"
-									checked={settings.weeklyReport}
-									onChange={(e) =>
-										setSettings({ ...settings, weeklyReport: e.target.checked })
-									}
-									className="sr-only peer"
-								/>
-								<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-							</label>
-						</div>
-
-						{/* Week Start */}
-						<div className="space-y-2">
-							<label className="block text-sm font-medium text-gray-700">
-								Week Starts On
-							</label>
-							<select
-								value={settings.weekStartsOn}
-								onChange={(e) =>
-									setSettings({ ...settings, weekStartsOn: e.target.value })
-								}
-								className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							>
-								<option value="monday">Monday</option>
-								<option value="sunday">Sunday</option>
-							</select>
-						</div>
-
-						{/* Timezone */}
-						<div className="space-y-2">
-							<label className="block text-sm font-medium text-gray-700">
-								Timezone
-							</label>
-							<select
-								value={settings.timezone}
-								onChange={(e) =>
-									setSettings({ ...settings, timezone: e.target.value })
-								}
-								className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							>
-								<option value={settings.timezone}>{settings.timezone}</option>
-							</select>
+							<ToggleButton
+								checked={settings.eveningNotifications}
+								onChange={e => handleSettingChange('eveningNotifications', e.target.checked)}
+							/>
 						</div>
 					</div>
 
 					{/* Footer */}
 					<div className="p-4 border-t">
-						<button
-							onClick={() => {
-								// TODO: Save settings
-								onClose();
-							}}
-							className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-						>
-							Save Changes
-						</button>
+						<ButtonComponent onClick={onClose} variant="primary" size="lg" fullWidth>
+							Done
+						</ButtonComponent>
 					</div>
 				</div>
 			</div>

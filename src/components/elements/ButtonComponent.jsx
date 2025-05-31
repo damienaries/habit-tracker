@@ -7,6 +7,7 @@ export default function ButtonComponent({
 	loading = false,
 	iconLeft = null,
 	iconRight = null,
+	fullWidth = false,
 	children,
 }) {
 	const baseclasses =
@@ -24,10 +25,11 @@ export default function ButtonComponent({
 			'bg-gray-100 text-gray-800 hover:bg-gray-300 focus:ring-gray-500 border border-gray-300',
 	}[variant];
 
-	const disabledClasses =
-		disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
+	const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
 
-	const classes = `${baseclasses} ${sizeClasses} ${variantClasses} ${disabledClasses}`;
+	const widthClass = fullWidth ? 'w-full' : '';
+
+	const classes = `${baseclasses} ${sizeClasses} ${variantClasses} ${disabledClasses} ${widthClass}`;
 
 	const content = (
 		<>
@@ -42,12 +44,7 @@ export default function ButtonComponent({
 
 	if (href) {
 		return (
-			<a
-				href={href}
-				onClick={onClick}
-				className={classes}
-				aria-disabled={disabled}
-			>
+			<a href={href} onClick={onClick} className={classes} aria-disabled={disabled}>
 				{content}
 			</a>
 		);
