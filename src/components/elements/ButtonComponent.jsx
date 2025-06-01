@@ -23,6 +23,7 @@ export default function ButtonComponent({
 		primary: 'bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-700',
 		secondary:
 			'bg-gray-100 text-gray-800 hover:bg-gray-300 focus:ring-gray-500 border border-gray-300',
+		danger: 'bg-red-800 text-white hover:bg-red-700 focus:ring-red-700',
 	}[variant];
 
 	const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { db } from '../db/habitDb';
-import { formatDateTitle } from '../utils/dateHelpers';
+import HabitCard from '../components/HabitCard';
 
 export default function AllHabitsView() {
 	const {
@@ -23,26 +23,9 @@ export default function AllHabitsView() {
 				<p className="text-gray-400">No habits created yet.</p>
 			) : (
 				<ul className="space-y-3">
-					{habits?.map((habit) => (
-						<li
-							key={habit.id}
-							className="bg-white shadow-sm p-4 rounded-md flex justify-between items-center"
-						>
-							<div>
-								<div className="font-medium">{habit.name}</div>
-								<div className="text-xs text-gray-500">
-									Frequency: {habit.frequency}
-									{habit.timesPerPeriod
-										? ` (${habit.timesPerPeriod}× per ${habit.frequency})`
-										: ''}
-								</div>
-								{habit.lastDone && (
-									<div className="text-xs text-gray-400 mt-1">
-										Last done: {formatDateTitle(new Date(habit.lastDone))}
-									</div>
-								)}
-							</div>
-							<div className="text-sm font-semibold">🔥 {habit.streak}</div>
+					{habits?.map(habit => (
+						<li key={habit.id}>
+							<HabitCard habit={habit} date={new Date()} dayCard={false} />
 						</li>
 					))}
 				</ul>
