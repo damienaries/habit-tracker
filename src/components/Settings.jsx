@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from './icons/Icon';
 import ButtonComponent from './elements/ButtonComponent';
 import ToggleButton from './elements/ToggleButton';
 import { useUser } from '../contexts/UserContext';
+import { NotificationService } from '../services/notificationService';
 
 export default function Settings({ isOpen, onClose }) {
 	const { user, updateUserSettings } = useUser();
@@ -10,10 +11,34 @@ export default function Settings({ isOpen, onClose }) {
 		morningNotifications: user?.settings?.morningNotifications ?? true,
 		eveningNotifications: user?.settings?.eveningNotifications ?? true,
 	});
+	const [notificationPermission, setNotificationPermission] = useState('default');
 
-	const handleSettingChange = (key, value) => {
+	useEffect(() => {
+		if ('Notification' in window) {
+			setNotificationPermission(Notification.permission);
+		}
+	}, []);
+
+	const handleSettingChange = async (key, value) => {
+		if (value && notificationPermission !== 'granted') {
+			const granted = await NotificationService.requestPermission();
+			if (!granted) {
+				// Show error message or handle permission denied
+				return;
+			}
+			setNotificationPermission('granted');
+		}
+
 		setSettings(prev => ({ ...prev, [key]: value }));
 		updateUserSettings({ [key]: value });
+
+		// Schedule notifications if enabled
+		if (value) {
+			await NotificationService.scheduleDailyNotifications(user.habits, {
+				...user.settings,
+				[key]: value,
+			});
+		}
 	};
 
 	// Format the creation date
@@ -63,28 +88,43 @@ export default function Settings({ isOpen, onClose }) {
 							</p>
 						</div>
 
-						{/* Morning Notifications */}
-						<div className="flex items-center justify-between py-2">
-							<div>
-								<label className="block text-lg font-medium text-gray-700">Morning Recap</label>
-								<p className="text-gray-500">Daily summary of your habits at 9AM</p>
-							</div>
-							<ToggleButton
-								checked={settings.morningNotifications}
-								onChange={e => handleSettingChange('morningNotifications', e.target.checked)}
-							/>
-						</div>
+						{/* Notifications Section */}
+						<div className="space-y-4">
+							<h3 className="text-lg font-medium text-gray-900">Notifications</h3>
 
-						{/* Evening Notifications */}
-						<div className="flex items-center justify-between py-2">
-							<div>
-								<label className="block text-lg font-medium text-gray-700">Evening Reminder</label>
-								<p className="text-gray-500">Reminder to complete your habits at 9PM</p>
+							{notificationPermission === 'denied' && (
+								<div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800">
+									Notifications are blocked. Please enable them in your browser settings.
+								</div>
+							)}
+
+							{/* Morning Notifications */}
+							<div className="flex items-center justify-between py-2">
+								<div>
+									<label className="block text-lg font-medium text-gray-700">Morning Recap</label>
+									<p className="text-gray-500">Daily summary of your habits at 9AM</p>
+								</div>
+								<ToggleButton
+									checked={settings.morningNotifications}
+									onChange={e => handleSettingChange('morningNotifications', e.target.checked)}
+									disabled={notificationPermission === 'denied'}
+								/>
 							</div>
-							<ToggleButton
-								checked={settings.eveningNotifications}
-								onChange={e => handleSettingChange('eveningNotifications', e.target.checked)}
-							/>
+
+							{/* Evening Notifications */}
+							<div className="flex items-center justify-between py-2">
+								<div>
+									<label className="block text-lg font-medium text-gray-700">
+										Evening Reminder
+									</label>
+									<p className="text-gray-500">Reminder to complete your habits at 9PM</p>
+								</div>
+								<ToggleButton
+									checked={settings.eveningNotifications}
+									onChange={e => handleSettingChange('eveningNotifications', e.target.checked)}
+									disabled={notificationPermission === 'denied'}
+								/>
+							</div>
 						</div>
 					</div>
 

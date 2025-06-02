@@ -81,7 +81,7 @@ export default function HabitCard({ habit, date, dayCard = true }) {
 		<div
 			key={habit.id}
 			className={`p-3 rounded-md w-full flex items-start gap-3 transition-colors duration-200
-				${alreadyDone ? 'bg-green-50' : 'bg-gray-50'}
+				${dayCard ? (alreadyDone ? 'bg-green-50' : 'bg-gray-50') : ''}
 				${weeklyProgress?.isWeekComplete ? 'opacity-75' : 'opacity-100'}
 			`}
 		>
