@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createHabit } from '../services/habitService';
 import ButtonComponent from './elements/ButtonComponent';
+import { normalizeDate } from '../db/habitDb';
 
 export default function HabitForm({ onCreate }) {
 	const [name, setName] = useState('');
@@ -9,7 +10,7 @@ export default function HabitForm({ onCreate }) {
 	const [timesPerPeriod, setTimesPerPeriod] = useState('');
 	const [details, setDetails] = useState('');
 	const [startDate, setStartDate] = useState(
-		() => new Date().toISOString().split('T')[0]
+		() => normalizeDate(new Date()).toISOString().split('T')[0]
 	);
 	const [endDate, setEndDate] = useState('');
 	const [error, setError] = useState(null);
@@ -18,15 +19,12 @@ export default function HabitForm({ onCreate }) {
 	const validateForm = () => {
 		if (!name || !frequency || !startDate) {
 			setError('Please fill in all required fields.');
-			return;
+			return false;
 		}
 
-		if (
-			frequency === 'every_n_days' &&
-			(!customInterval || +customInterval < 1)
-		) {
+		if (frequency === 'every_n_days' && (!customInterval || +customInterval < 1)) {
 			setError('Please enter a valid interval, must be at least 1');
-			return;
+			return false;
 		}
 
 		if (
@@ -35,23 +33,24 @@ export default function HabitForm({ onCreate }) {
 			+timesPerPeriod < 1
 		) {
 			setError('Times per period must be at least 1.');
-			return;
+			return false;
 		}
+
+		return true;
 	};
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = async e => {
 		e.preventDefault();
-		validateForm();
+		if (!validateForm()) return;
 
 		try {
 			await createHabit({
 				name,
 				frequency,
-				startDate: new Date(startDate),
-				endDate: endDate ? new Date(endDate) : null,
+				startDate: normalizeDate(startDate),
+				endDate: endDate ? normalizeDate(endDate) : null,
 				details,
-				customInterval:
-					frequency === 'every_n_days' ? parseInt(customInterval, 10) : null,
+				customInterval: frequency === 'every_n_days' ? parseInt(customInterval, 10) : null,
 				timesPerPeriod:
 					(frequency === 'weekly' || frequency === 'monthly') && timesPerPeriod
 						? parseInt(timesPerPeriod, 10)
@@ -64,7 +63,7 @@ export default function HabitForm({ onCreate }) {
 			setCustomInterval('');
 			setTimesPerPeriod('');
 			setDetails('');
-			setStartDate(() => new Date().toISOString().split('T')[0]);
+			setStartDate(normalizeDate(new Date()).toISOString().split('T')[0]);
 			setEndDate('');
 			setError(null);
 
@@ -96,9 +95,7 @@ export default function HabitForm({ onCreate }) {
 			{message && (
 				<div
 					className={`text-sm px-4 py-2 rounded-md ${
-						message.type === 'success'
-							? 'bg-green-100 text-green-800'
-							: 'bg-red-100 text-red-800'
+						message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
 					}`}
 				>
 					{message.text}
@@ -111,7 +108,7 @@ export default function HabitForm({ onCreate }) {
 					type="text"
 					className="form-input"
 					value={name}
-					onChange={(e) => setName(e.target.value)}
+					onChange={e => setName(e.target.value)}
 					required
 				/>
 			</label>
@@ -120,7 +117,7 @@ export default function HabitForm({ onCreate }) {
 				<span className="form-label">Frequency *</span>
 				<select
 					value={frequency}
-					onChange={(e) => setFrequency(e.target.value)}
+					onChange={e => setFrequency(e.target.value)}
 					className="form-input"
 				>
 					<option value="daily">Daily</option>
@@ -138,7 +135,7 @@ export default function HabitForm({ onCreate }) {
 						className="form-input"
 						min="1"
 						value={customInterval}
-						onChange={(e) => setCustomInterval(e.target.value)}
+						onChange={e => setCustomInterval(e.target.value)}
 					/>
 				</label>
 			)}
@@ -151,7 +148,7 @@ export default function HabitForm({ onCreate }) {
 						className="form-input"
 						min="1"
 						value={timesPerPeriod}
-						onChange={(e) => setTimesPerPeriod(e.target.value)}
+						onChange={e => setTimesPerPeriod(e.target.value)}
 					/>
 				</label>
 			)}
@@ -162,7 +159,7 @@ export default function HabitForm({ onCreate }) {
 					rows="3"
 					className="form-input"
 					value={details}
-					onChange={(e) => setDetails(e.target.value)}
+					onChange={e => setDetails(e.target.value)}
 					placeholder="Describe how achieving this habit will look like."
 				/>
 			</label>
@@ -173,7 +170,7 @@ export default function HabitForm({ onCreate }) {
 					type="date"
 					className="form-input"
 					value={startDate}
-					onChange={(e) => setStartDate(e.target.value)}
+					onChange={e => setStartDate(e.target.value)}
 				/>
 			</label>
 
@@ -183,7 +180,7 @@ export default function HabitForm({ onCreate }) {
 					type="date"
 					className="form-input"
 					value={endDate}
-					onChange={(e) => setEndDate(e.target.value)}
+					onChange={e => setEndDate(e.target.value)}
 				/>
 			</label>
 

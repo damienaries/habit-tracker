@@ -16,50 +16,56 @@ export class NotificationService {
 		}
 	}
 
-	static async scheduleNotification(title, body, time) {
+	static async scheduleDailyNotifications(habits, settings) {
+		if (!settings.morningNotifications && !settings.eveningNotifications) return;
 		if (!('serviceWorker' in navigator)) return;
 
 		try {
 			const registration = await navigator.serviceWorker.ready;
-			const timestamp = new Date(time).getTime();
+			const today = new Date();
 
-			await registration.showNotification(title, {
-				body,
-				icon: '/icon-192x192.png',
-				badge: '/badge-72x72.png',
-				tag: 'habit-reminder',
-				timestamp,
-				requireInteraction: true,
-				actions: [
-					{
-						action: 'open',
-						title: 'Open App',
-					},
-				],
-			});
+			// Schedule morning notification
+			if (settings.morningNotifications) {
+				const morningTime = new Date(today);
+				morningTime.setHours(9, 0, 0, 0);
+				const morningMessage = this.generateMorningMessage(habits);
+
+				await registration.showNotification("Today's Habits", {
+					body: morningMessage,
+					icon: '/icon-192x192.png',
+					badge: '/badge-72x72.png',
+					tag: 'morning-habits',
+					requireInteraction: true,
+					actions: [{ action: 'open', title: 'Open App' }],
+					timestamp: morningTime.getTime(),
+				});
+			}
+
+			// Schedule evening notification
+			if (settings.eveningNotifications) {
+				const eveningTime = new Date(today);
+				eveningTime.setHours(21, 0, 0, 0);
+				const eveningMessage = this.generateEveningMessage(habits);
+
+				await registration.showNotification('Habit Check-in', {
+					body: eveningMessage,
+					icon: '/icon-192x192.png',
+					badge: '/badge-72x72.png',
+					tag: 'evening-habits',
+					requireInteraction: true,
+					actions: [{ action: 'open', title: 'Open App' }],
+					timestamp: eveningTime.getTime(),
+				});
+			}
+
+			// Register periodic sync for background updates
+			if ('periodicSync' in registration) {
+				await registration.periodicSync.register('habit-notifications', {
+					minInterval: 24 * 60 * 60 * 1000, // 24 hours
+				});
+			}
 		} catch (error) {
-			console.error('Error scheduling notification:', error);
-		}
-	}
-
-	static async scheduleDailyNotifications(habits, settings) {
-		if (!settings.morningNotifications && !settings.eveningNotifications) return;
-
-		const today = new Date();
-		const morningTime = new Date(today);
-		morningTime.setHours(9, 0, 0, 0);
-
-		const eveningTime = new Date(today);
-		eveningTime.setHours(21, 0, 0, 0);
-
-		if (settings.morningNotifications) {
-			const morningMessage = this.generateMorningMessage(habits);
-			await this.scheduleNotification("Today's Habits", morningMessage, morningTime);
-		}
-
-		if (settings.eveningNotifications) {
-			const eveningMessage = this.generateEveningMessage(habits);
-			await this.scheduleNotification('Habit Check-in', eveningMessage, eveningTime);
+			console.error('Error scheduling notifications:', error);
 		}
 	}
 
@@ -87,19 +93,17 @@ export class NotificationService {
 		return `You've completed ${completedToday} out of ${activeHabits.length} habit${activeHabits.length === 1 ? '' : 's'} today. Keep going!`;
 	}
 
-	static async registerPeriodicSync() {
-		if (!('serviceWorker' in navigator) || !('periodicSync' in navigator.serviceWorker)) {
-			console.log('Periodic Sync not supported');
-			return;
-		}
+	// Helper function to convert VAPID key
+	static urlBase64ToUint8Array(base64String) {
+		const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+		const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
-		try {
-			const registration = await navigator.serviceWorker.ready;
-			await registration.periodicSync.register('habit-notifications', {
-				minInterval: 24 * 60 * 60 * 1000, // 24 hours
-			});
-		} catch (error) {
-			console.error('Error registering periodic sync:', error);
+		const rawData = window.atob(base64);
+		const outputArray = new Uint8Array(rawData.length);
+
+		for (let i = 0; i < rawData.length; ++i) {
+			outputArray[i] = rawData.charCodeAt(i);
 		}
+		return outputArray;
 	}
 }

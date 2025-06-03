@@ -6,7 +6,7 @@ import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
 
 export default function Settings({ isOpen, onClose }) {
-	const { user, updateUserSettings } = useUser();
+	const { user, updateUserSettings, logout } = useUser();
 	const [settings, setSettings] = useState({
 		morningNotifications: user?.settings?.morningNotifications ?? true,
 		eveningNotifications: user?.settings?.eveningNotifications ?? true,
@@ -50,6 +50,11 @@ export default function Settings({ isOpen, onClose }) {
 		});
 	};
 
+	const handleLogout = () => {
+		logout();
+		onClose();
+	};
+
 	return (
 		<>
 			{/* Backdrop */}
@@ -62,7 +67,7 @@ export default function Settings({ isOpen, onClose }) {
 
 			{/* Settings Panel */}
 			<div
-				className={`fixed z-50 top-0 right-0 h-full w-full max-w-md bg-white shadow-xl transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+				className={`fixed z-50 top-0 right-0 h-full w-full bg-white shadow-xl transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
 					isOpen ? 'translate-x-0' : 'translate-x-full'
 				}`}
 			>
@@ -82,9 +87,11 @@ export default function Settings({ isOpen, onClose }) {
 					<div className="flex-1 overflow-y-auto p-4 space-y-6">
 						{/* User Profile Section */}
 						<div className="pb-4 border-b border-gray-200">
-							<h3 className="text-xl text-center font-medium text-gray-900">{user?.name}</h3>
+							<h3 className="text-xl text-center font-medium text-gray-900 capitalize">
+								{user?.name}
+							</h3>
 							<p className="text-center text-sm text-gray-500 mt-1">
-								Created on {formatDate(user?.createdAt)}
+								Building habits since {formatDate(user?.createdAt)}
 							</p>
 						</div>
 
@@ -125,6 +132,14 @@ export default function Settings({ isOpen, onClose }) {
 									disabled={notificationPermission === 'denied'}
 								/>
 							</div>
+						</div>
+
+						{/* Account Section */}
+						<div className="space-y-4">
+							<h3 className="text-lg font-medium text-gray-900">Account</h3>
+							<ButtonComponent onClick={handleLogout} variant="danger" fullWidth>
+								Logout
+							</ButtonComponent>
 						</div>
 					</div>
 

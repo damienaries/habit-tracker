@@ -4,6 +4,8 @@ import PlusCircle from './plus-circle.svg?react';
 import ListBullet from './list-bullet.svg?react';
 import Cog from './cog.svg?react';
 import X from './x.svg?react';
+import Download from './download.svg?react';
+import ChevronDown from './chevron-down.svg?react';
 
 export const icons = {
 	fire: Fire,
@@ -12,6 +14,8 @@ export const icons = {
 	'list-bullet': ListBullet,
 	cog: Cog,
 	x: X,
+	download: Download,
+	'chevron-down': ChevronDown,
 };
 
 export default icons;

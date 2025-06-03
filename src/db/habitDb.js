@@ -2,9 +2,10 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('HabitTrackerDB');
 
-db.version(1).stores({
+db.version(2).stores({
+	users: '++id, name, createdAt, settings',
 	habits:
-		'++id, name, frequency, startDate, endDate, lastDone, streak, timesPerPeriod, customInterval, weeklyCompletions, completedDates',
+		'++id, userId, name, frequency, startDate, endDate, lastDone, streak, timesPerPeriod, customInterval, weeklyCompletions, completedDates',
 });
 
 // Helper to get start of week (Monday)
@@ -33,7 +34,7 @@ export function getWeeklyCompletions(habit, date) {
 	const weekEnd = new Date(weekStart);
 	weekEnd.setDate(weekEnd.getDate() + 7);
 
-	return (habit.weeklyCompletions || []).filter((completion) => {
+	return (habit.weeklyCompletions || []).filter(completion => {
 		const completionDate = new Date(completion);
 		// Set both dates to midnight UTC for consistent comparison
 		completionDate.setUTCHours(0, 0, 0, 0);
@@ -60,7 +61,7 @@ export function shouldShowHabitToday(habit, date, referenceDate = new Date()) {
 	const isPast = checkDate < today;
 
 	const completions = habit.weeklyCompletions || [];
-	const completedToday = completions.some((d) => {
+	const completedToday = completions.some(d => {
 		const completionDate = new Date(d);
 		completionDate.setUTCHours(0, 0, 0, 0);
 		return completionDate.getTime() === checkDate.getTime();
@@ -89,24 +90,20 @@ export async function toggleHabitCompletion(habit, date) {
 	// Use completedDates for daily, weeklyCompletions for weekly
 	const isWeekly = habit.frequency === 'weekly' && habit.timesPerPeriod;
 	const completionsKey = isWeekly ? 'weeklyCompletions' : 'completedDates';
-	const completions = (habit[completionsKey] || []).map((d) =>
-		new Date(d).getTime()
-	);
+	const completions = (habit[completionsKey] || []).map(d => new Date(d));
 	const todayTime = today.getTime();
-	const isCompleted = completions.includes(todayTime);
+	const isCompleted = completions.some(d => d.getTime() === todayTime);
 
 	if (isCompleted) {
 		// Uncomplete: remove only this date
 		const newCompletions = (habit[completionsKey] || []).filter(
-			(d) => new Date(d).getTime() !== todayTime
+			d => new Date(d).getTime() !== todayTime
 		);
 		await db.habits.update(habit.id, {
 			[completionsKey]: newCompletions,
 			lastDone:
 				newCompletions.length > 0
-					? new Date(
-							Math.max(...newCompletions.map((d) => new Date(d).getTime()))
-					  )
+					? new Date(Math.max(...newCompletions.map(d => new Date(d).getTime())))
 					: null,
 			streak: Math.max(0, habit.streak - 1),
 		});
@@ -120,10 +117,27 @@ export async function toggleHabitCompletion(habit, date) {
 		});
 	}
 }
+
+// Helper function to ensure dates are stored as Date objects
+export function ensureDateObject(date) {
+	if (!date) return null;
+	if (date instanceof Date) return date;
+	return new Date(date);
+}
+
+// Helper function to ensure dates are stored consistently
+export function normalizeDate(date) {
+	const d = ensureDateObject(date);
+	if (!d) return null;
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
 // DB HELPER FUNCTIONS
 
 export async function dbClear() {
 	await db.habits.clear();
+	await db.users.clear();
 	console.log('🧹 Database cleared');
 }
 
@@ -133,8 +147,19 @@ export async function dbFreshSeed() {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
+	// Create a test user
+	const userId = await db.users.add({
+		name: 'Test User',
+		createdAt: today,
+		settings: {
+			morningNotifications: true,
+			eveningNotifications: true,
+		},
+	});
+
 	const sampleHabits = [
 		{
+			userId,
 			name: 'Morning Meditation',
 			frequency: 'daily',
 			startDate: today,
@@ -143,6 +168,7 @@ export async function dbFreshSeed() {
 			completedDates: [today],
 		},
 		{
+			userId,
 			name: 'Exercise',
 			frequency: 'weekly',
 			timesPerPeriod: 3,
@@ -154,6 +180,7 @@ export async function dbFreshSeed() {
 			],
 		},
 		{
+			userId,
 			name: 'Read',
 			frequency: 'daily',
 			startDate: today,
