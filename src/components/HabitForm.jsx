@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { createHabit } from '../services/habitService';
 import ButtonComponent from './elements/ButtonComponent';
 import { normalizeDate } from '../db/habitDb';
+import { useUser } from '../contexts/UserContext';
 
 export default function HabitForm({ onCreate }) {
+	const { user } = useUser();
 	const [name, setName] = useState('');
 	const [frequency, setFrequency] = useState('daily');
 	const [customInterval, setCustomInterval] = useState('');
@@ -45,6 +47,7 @@ export default function HabitForm({ onCreate }) {
 
 		try {
 			await createHabit({
+				userId: user.id,
 				name,
 				frequency,
 				startDate: normalizeDate(startDate),
@@ -90,7 +93,7 @@ export default function HabitForm({ onCreate }) {
 			onSubmit={handleSubmit}
 			className="flex flex-col gap-y-6 w-full my-4 rounded border border-gray-50 p-2"
 		>
-			{error && <div className="text-red-600 text-sm">{{ error }}</div>}
+			{error && <div className="text-red-600 text-sm">{error}</div>}
 
 			{message && (
 				<div
