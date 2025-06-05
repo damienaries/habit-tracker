@@ -3,8 +3,10 @@ import HabitCard from './HabitCard';
 import { useQuery } from '@tanstack/react-query';
 import { getHabitsForDate } from '../services/habitLogic';
 import { useState, useRef } from 'react';
+import { useUser } from '../contexts/UserContext';
 
 export default function DayCard({ date }) {
+	const { user } = useUser();
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
@@ -16,10 +18,11 @@ export default function DayCard({ date }) {
 		isLoading,
 		error,
 	} = useQuery({
-		queryKey: ['habitsForDate', date.toDateString()],
-		queryFn: () => getHabitsForDate(date),
+		queryKey: ['habitsForDate', date.toDateString(), user?.id],
+		queryFn: () => getHabitsForDate(date, user.id),
 		staleTime: 1000 * 60 * 5,
 		cacheTime: 1000 * 60 * 60,
+		enabled: !!user,
 	});
 
 	// Show/hide habits for past days
@@ -27,7 +30,7 @@ export default function DayCard({ date }) {
 	const timerRef = useRef(null);
 	const handleToggleHabits = () => {
 		if (!isPast || !habits || habits.length === 0) return;
-		setShowHabits((prev) => {
+		setShowHabits(prev => {
 			const next = !prev;
 			if (next) {
 				if (timerRef.current) clearTimeout(timerRef.current);
@@ -42,20 +45,20 @@ export default function DayCard({ date }) {
 		if (!habits || habits.length === 0) return 'no-habits';
 
 		// For past days, check if habits were completed on that specific date
-		const allCompleted = habits.every((habit) => {
+		const allCompleted = habits.every(habit => {
 			const completions =
 				habit.frequency === 'weekly' && habit.timesPerPeriod
 					? habit.weeklyCompletions || []
 					: habit.completedDates || [];
-			return completions.some((d) => isSameDay(new Date(d), date));
+			return completions.some(d => isSameDay(new Date(d), date));
 		});
 
-		const someCompleted = habits.some((habit) => {
+		const someCompleted = habits.some(habit => {
 			const completions =
 				habit.frequency === 'weekly' && habit.timesPerPeriod
 					? habit.weeklyCompletions || []
 					: habit.completedDates || [];
-			return completions.some((d) => isSameDay(new Date(d), date));
+			return completions.some(d => isSameDay(new Date(d), date));
 		});
 
 		if (allCompleted) return 'completed';
@@ -79,15 +82,11 @@ export default function DayCard({ date }) {
 		<article
 			className={`snap-center transition-all w-full rounded-xl p-4 shadow-lg ${
 				statusStyles[status]
-			} ${
-				isToday ? 'ring-2 ring-gray-800 ring-offset-4' : 'ring-1 ring-gray-300'
-			}`}
+			} ${isToday ? 'ring-2 ring-gray-800 ring-offset-4' : 'ring-1 ring-gray-300'}`}
 			onClick={isPast ? handleToggleHabits : undefined}
 		>
 			<div className="flex justify-between items-center">
-				<h2 className="text-lg font-semibold text-gray-800">
-					{formatDateTitle(date)}
-				</h2>
+				<h2 className="text-lg font-semibold text-gray-800">{formatDateTitle(date)}</h2>
 				{isPast && habits && habits.length > 0 && (
 					<div className="text-sm">
 						{status === 'completed' && '✅'}
@@ -98,14 +97,12 @@ export default function DayCard({ date }) {
 			</div>
 
 			{isLoading && <p className="text-sm text-gray-400 mt-3">Loading...</p>}
-			{error && (
-				<p className="text-sm text-red-600 mt-3">Error loading habits.</p>
-			)}
+			{error && <p className="text-sm text-red-600 mt-3">Error loading habits.</p>}
 
 			{/* Show HabitCards if allowed */}
 			{shouldShowHabits && habits?.length > 0 && (
 				<div className="space-y-2 mt-3">
-					{habits.map((habit) => (
+					{habits.map(habit => (
 						<HabitCard key={habit.id} habit={habit} date={date} />
 					))}
 				</div>

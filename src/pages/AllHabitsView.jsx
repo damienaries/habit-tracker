@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { db } from '../db/habitDb';
 import HabitCard from '../components/HabitCard';
+import { useUser } from '../contexts/UserContext';
 
 export default function AllHabitsView() {
+	const { user } = useUser();
+
 	const {
 		data: habits,
 		isLoading,
 		error,
 	} = useQuery({
-		queryKey: ['allHabits'],
-		queryFn: () => db.habits.toArray(),
+		queryKey: ['allHabits', user?.id],
+		queryFn: () => db.habits.where('userId').equals(user.id).toArray(),
+		enabled: !!user,
 	});
 
 	return (

@@ -1,13 +1,18 @@
 import { db } from '../db/habitDb';
 import { getUniqueDateIdentifier, getStartOfWeek } from '../utils/dateHelpers';
+import { useUser } from '../contexts/UserContext';
 
-export async function getHabitsForDate(date) {
+export async function getHabitsForDate(date, userId) {
+	if (!userId) {
+		throw new Error('User ID is required');
+	}
+
 	// Ensure date is at midnight
 	const cardDate = new Date(date);
 	cardDate.setHours(0, 0, 0, 0);
 	const cardDateStr = getUniqueDateIdentifier(cardDate);
 
-	const habits = await db.habits.toArray();
+	const habits = await db.habits.where('userId').equals(userId).toArray();
 	const activeHabits = [];
 
 	for (const habit of habits) {
@@ -18,17 +23,14 @@ export async function getHabitsForDate(date) {
 		const endDateStr = endDate ? getUniqueDateIdentifier(endDate) : null;
 
 		// Check if habit is active on this date (compare only date portion in UTC)
-		if (
-			cardDateStr < startDateStr ||
-			(endDateStr && cardDateStr > endDateStr)
-		) {
+		if (cardDateStr < startDateStr || (endDateStr && cardDateStr > endDateStr)) {
 			continue;
 		}
 
 		// For weekly habits, check if this specific day should show
 		if (habit.frequency === 'weekly' && habit.timesPerPeriod) {
 			const completions = habit.weeklyCompletions || [];
-			const completedToday = completions.some((d) => {
+			const completedToday = completions.some(d => {
 				const completionDate = new Date(d);
 				completionDate.setUTCHours(0, 0, 0, 0);
 				return completionDate.getTime() === cardDate.getTime();
@@ -37,7 +39,7 @@ export async function getHabitsForDate(date) {
 			// Show if either:
 			// 1. This specific day was completed
 			// 2. The weekly target hasn't been met yet
-			const weekCompletions = completions.filter((completion) => {
+			const weekCompletions = completions.filter(completion => {
 				const completionDate = new Date(completion);
 				completionDate.setUTCHours(0, 0, 0, 0);
 				const weekStart = getStartOfWeek(cardDate);
