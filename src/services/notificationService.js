@@ -32,12 +32,13 @@ export class NotificationService {
 
 				await registration.showNotification("Today's Habits", {
 					body: morningMessage,
-					icon: '/icon-192x192.png',
-					badge: '/badge-72x72.png',
+					icon: '/icons/fire.svg',
+					badge: '/icons/fire.svg',
 					tag: 'morning-habits',
 					requireInteraction: true,
 					actions: [{ action: 'open', title: 'Open App' }],
 					timestamp: morningTime.getTime(),
+					vibrate: [200, 100, 200],
 				});
 			}
 
@@ -49,12 +50,13 @@ export class NotificationService {
 
 				await registration.showNotification('Habit Check-in', {
 					body: eveningMessage,
-					icon: '/icon-192x192.png',
-					badge: '/badge-72x72.png',
+					icon: '/icons/fire.svg',
+					badge: '/icons/fire.svg',
 					tag: 'evening-habits',
 					requireInteraction: true,
 					actions: [{ action: 'open', title: 'Open App' }],
 					timestamp: eveningTime.getTime(),
+					vibrate: [200, 100, 200],
 				});
 			}
 
@@ -62,6 +64,14 @@ export class NotificationService {
 			if ('periodicSync' in registration) {
 				await registration.periodicSync.register('habit-notifications', {
 					minInterval: 24 * 60 * 60 * 1000, // 24 hours
+				});
+			}
+
+			// Register push subscription for background notifications
+			if ('PushManager' in window) {
+				await registration.pushManager.subscribe({
+					userVisibleOnly: true,
+					applicationServerKey: this.urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
 				});
 			}
 		} catch (error) {
@@ -88,9 +98,11 @@ export class NotificationService {
 		).length;
 
 		if (completedToday === activeHabits.length) {
-			return "🎉 Congratulations! You've completed all your habits today!";
+			return "🎉 Congratulations! You've completed all your habits today! Keep up the great work!";
 		}
-		return `You've completed ${completedToday} out of ${activeHabits.length} habit${activeHabits.length === 1 ? '' : 's'} today. Keep going!`;
+
+		const incompleteHabits = activeHabits.length - completedToday;
+		return `You still have ${incompleteHabits} habit${incompleteHabits === 1 ? '' : 's'} to complete today. Don't forget to check them off!`;
 	}
 
 	// Helper function to convert VAPID key
