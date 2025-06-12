@@ -6,6 +6,7 @@ import Cog from './cog.svg?react';
 import X from './x.svg?react';
 import Download from './download.svg?react';
 import ChevronDown from './chevron-down.svg?react';
+import StreakUp from './streak-up.svg?react';
 
 export const icons = {
 	fire: Fire,
@@ -16,6 +17,7 @@ export const icons = {
 	x: X,
 	download: Download,
 	'chevron-down': ChevronDown,
+	'streak-up': StreakUp,
 };
 
 export default icons;

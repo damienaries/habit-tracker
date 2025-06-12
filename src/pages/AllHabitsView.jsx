@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { db } from '../db/habitDb';
 import HabitCard from '../components/HabitCard';
 import { useUser } from '../contexts/UserContext';
+import Icon from '../components/icons/Icon';
 
 export default function AllHabitsView() {
 	const { user } = useUser();
@@ -18,7 +19,10 @@ export default function AllHabitsView() {
 
 	return (
 		<div className="p-6 max-w-screen-sm mx-auto space-y-4">
-			<h1 className="text-xl font-bold mb-4">📈 Streak Tracker</h1>
+			<h1 className="text-xl mb-4 flex items-center gap-2">
+				<Icon icon="streak-up" size="lg" color="#6B7280" />
+				<span>Streak progress for {user?.name}</span>
+			</h1>
 
 			{isLoading && <p className="text-gray-500">Loading habits...</p>}
 			{error && <p className="text-red-600">Error loading habits.</p>}
