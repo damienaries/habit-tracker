@@ -1,5 +1,3 @@
-import { isSameDay } from '../utils/dateHelpers';
-
 export class NotificationService {
 	static async requestPermission() {
 		if (!('Notification' in window)) {
@@ -16,93 +14,53 @@ export class NotificationService {
 		}
 	}
 
-	static async scheduleDailyNotifications(habits, settings) {
-		if (!settings.morningNotifications && !settings.eveningNotifications) return;
-		if (!('serviceWorker' in navigator)) return;
+	static async registerForPushNotifications(userId, habits, settings) {
+		if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+			console.log('Push notifications not supported');
+			return false;
+		}
 
 		try {
-			const registration = await navigator.serviceWorker.ready;
-			const today = new Date();
+			// Register service worker
+			const registration = await navigator.serviceWorker.register('/sw.js');
+			await navigator.serviceWorker.ready;
 
-			// Schedule morning notification
-			if (settings.morningNotifications) {
-				const morningTime = new Date(today);
-				morningTime.setHours(9, 0, 0, 0);
-				const morningMessage = this.generateMorningMessage(habits);
+			// Subscribe to push notifications
+			const subscription = await registration.pushManager.subscribe({
+				userVisibleOnly: true,
+				applicationServerKey: this.urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
+			});
 
-				await registration.showNotification("Today's Habits", {
-					body: morningMessage,
-					icon: '/icons/fire.svg',
-					badge: '/icons/fire.svg',
-					tag: 'morning-habits',
-					requireInteraction: true,
-					actions: [{ action: 'open', title: 'Open App' }],
-					timestamp: morningTime.getTime(),
-					vibrate: [200, 100, 200],
-				});
+			// Send subscription to backend
+			const response = await fetch('/.netlify/functions/send-notifications', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					action: 'subscribe',
+					subscription,
+					userId,
+					habits,
+					settings,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to register subscription');
 			}
 
-			// Schedule evening notification
-			if (settings.eveningNotifications) {
-				const eveningTime = new Date(today);
-				eveningTime.setHours(21, 0, 0, 0);
-				const eveningMessage = this.generateEveningMessage(habits);
-
-				await registration.showNotification('Habit Check-in', {
-					body: eveningMessage,
-					icon: '/icons/fire.svg',
-					badge: '/icons/fire.svg',
-					tag: 'evening-habits',
-					requireInteraction: true,
-					actions: [{ action: 'open', title: 'Open App' }],
-					timestamp: eveningTime.getTime(),
-					vibrate: [200, 100, 200],
-				});
-			}
-
-			// Register periodic sync for background updates
-			if ('periodicSync' in registration) {
-				await registration.periodicSync.register('habit-notifications', {
-					minInterval: 24 * 60 * 60 * 1000, // 24 hours
-				});
-			}
-
-			// Register push subscription for background notifications
-			if ('PushManager' in window) {
-				await registration.pushManager.subscribe({
-					userVisibleOnly: true,
-					applicationServerKey: this.urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
-				});
-			}
+			console.log('Successfully registered for push notifications');
+			return true;
 		} catch (error) {
-			console.error('Error scheduling notifications:', error);
+			console.error('Error registering for push notifications:', error);
+			return false;
 		}
 	}
 
-	static generateMorningMessage(habits) {
-		const activeHabits = habits.filter(h => !h.endDate);
-		if (activeHabits.length === 0) {
-			return 'You have no active habits for today. Time to create some new ones!';
-		}
-		return `You have ${activeHabits.length} habit${activeHabits.length === 1 ? '' : 's'} to complete today. Let's make it a great day!`;
-	}
-
-	static generateEveningMessage(habits) {
-		const activeHabits = habits.filter(h => !h.endDate);
-		if (activeHabits.length === 0) {
-			return 'You have no active habits for today.';
-		}
-
-		const completedToday = activeHabits.filter(h =>
-			h.completedDates?.some(d => isSameDay(new Date(d), new Date()))
-		).length;
-
-		if (completedToday === activeHabits.length) {
-			return "🎉 Congratulations! You've completed all your habits today! Keep up the great work!";
-		}
-
-		const incompleteHabits = activeHabits.length - completedToday;
-		return `You still have ${incompleteHabits} habit${incompleteHabits === 1 ? '' : 's'} to complete today. Don't forget to check them off!`;
+	static async updateNotificationSettings(userId, habits, settings) {
+		// Re-register with new settings
+		return this.registerForPushNotifications(userId, habits, settings);
 	}
 
 	// Helper function to convert VAPID key

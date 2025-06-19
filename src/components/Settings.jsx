@@ -12,6 +12,7 @@ export default function Settings({ isOpen, onClose }) {
 		eveningNotifications: user?.settings?.eveningNotifications ?? true,
 	});
 	const [notificationPermission, setNotificationPermission] = useState('default');
+	const [isRegistering, setIsRegistering] = useState(false);
 
 	useEffect(() => {
 		if ('Notification' in window) {
@@ -32,14 +33,28 @@ export default function Settings({ isOpen, onClose }) {
 		setSettings(prev => ({ ...prev, [key]: value }));
 		updateUserSettings({ [key]: value });
 
-		// Schedule notifications if enabled
-		if (value) {
-			await NotificationService.scheduleDailyNotifications(user.habits, {
-				...user.settings,
-				[key]: value,
-			});
+		// Register for push notifications if enabled
+		if (value && user?.id) {
+			setIsRegistering(true);
+			try {
+				await NotificationService.updateNotificationSettings(user.id, user.habits, {
+					...user.settings,
+					[key]: value,
+				});
+			} catch (error) {
+				console.error('Failed to update notification settings:', error);
+			} finally {
+				setIsRegistering(false);
+			}
 		}
 	};
+
+	// Register for notifications when component mounts
+	useEffect(() => {
+		if (user?.id && (settings.morningNotifications || settings.eveningNotifications)) {
+			NotificationService.registerForPushNotifications(user.id, user.habits, settings);
+		}
+	}, [user?.id]);
 
 	// Format the creation date
 	const formatDate = dateString => {
@@ -105,6 +120,12 @@ export default function Settings({ isOpen, onClose }) {
 								</div>
 							)}
 
+							{isRegistering && (
+								<div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+									Updating notification settings...
+								</div>
+							)}
+
 							{/* Morning Notifications */}
 							<div className="flex items-center justify-between py-2">
 								<div>
@@ -114,7 +135,7 @@ export default function Settings({ isOpen, onClose }) {
 								<ToggleButton
 									checked={settings.morningNotifications}
 									onChange={e => handleSettingChange('morningNotifications', e.target.checked)}
-									disabled={notificationPermission === 'denied'}
+									disabled={notificationPermission === 'denied' || isRegistering}
 								/>
 							</div>
 
@@ -129,7 +150,7 @@ export default function Settings({ isOpen, onClose }) {
 								<ToggleButton
 									checked={settings.eveningNotifications}
 									onChange={e => handleSettingChange('eveningNotifications', e.target.checked)}
-									disabled={notificationPermission === 'denied'}
+									disabled={notificationPermission === 'denied' || isRegistering}
 								/>
 							</div>
 						</div>

@@ -28,5 +28,23 @@ export default [
 			'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 		},
 	},
+	{
+		files: ['**/sw.js'],
+		languageOptions: {
+			globals: globals.serviceworker,
+		},
+	},
+	{
+		files: ['netlify/functions/**/*.js'],
+		languageOptions: {
+			globals: globals.node,
+			parserOptions: {
+				sourceType: 'commonjs',
+			},
+		},
+		rules: {
+			'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+		},
+	},
 	prettier,
 ];
