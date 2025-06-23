@@ -25,6 +25,13 @@ export class NotificationService {
 			const registration = await navigator.serviceWorker.register('/sw.js');
 			await navigator.serviceWorker.ready;
 
+			// Unsubscribe from any existing subscription first
+			const existingSubscription = await registration.pushManager.getSubscription();
+			if (existingSubscription) {
+				await existingSubscription.unsubscribe();
+				console.log('Unsubscribed from existing push notification subscription');
+			}
+
 			// Subscribe to push notifications
 			const subscription = await registration.pushManager.subscribe({
 				userVisibleOnly: true,
@@ -61,6 +68,28 @@ export class NotificationService {
 	static async updateNotificationSettings(userId, habits, settings) {
 		// Re-register with new settings
 		return this.registerForPushNotifications(userId, habits, settings);
+	}
+
+	static async clearAllPushSubscriptions() {
+		if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+			console.log('Push notifications not supported');
+			return false;
+		}
+
+		try {
+			const registration = await navigator.serviceWorker.getRegistration();
+			if (registration) {
+				const subscription = await registration.pushManager.getSubscription();
+				if (subscription) {
+					await subscription.unsubscribe();
+					console.log('Cleared existing push notification subscription');
+				}
+			}
+			return true;
+		} catch (error) {
+			console.error('Error clearing push subscriptions:', error);
+			return false;
+		}
 	}
 
 	// Helper function to convert VAPID key

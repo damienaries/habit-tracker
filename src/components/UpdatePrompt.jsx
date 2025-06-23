@@ -8,15 +8,12 @@ export function UpdatePrompt() {
 	useEffect(() => {
 		// Listen for the service worker update
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.ready.then((reg) => {
+			navigator.serviceWorker.ready.then(reg => {
 				setRegistration(reg);
 				reg.addEventListener('updatefound', () => {
 					const newWorker = reg.installing;
 					newWorker.addEventListener('statechange', () => {
-						if (
-							newWorker.state === 'installed' &&
-							navigator.serviceWorker.controller
-						) {
+						if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
 							setShowReload(true);
 						}
 					});

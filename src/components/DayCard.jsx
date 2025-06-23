@@ -28,16 +28,15 @@ export default function DayCard({ date }) {
 	// Show/hide habits for past days
 	const [showHabits, setShowHabits] = useState(false);
 	const timerRef = useRef(null);
+
 	const handleToggleHabits = () => {
-		if (!isPast || !habits || habits.length === 0) return;
-		setShowHabits(prev => {
-			const next = !prev;
-			if (next) {
-				if (timerRef.current) clearTimeout(timerRef.current);
-				timerRef.current = setTimeout(() => setShowHabits(false), 5000);
-			}
-			return next;
-		});
+		if (!habits || habits.length === 0) return;
+
+		setShowHabits(true);
+
+		// Clear any existing timer and set new one
+		if (timerRef.current) clearTimeout(timerRef.current);
+		timerRef.current = setTimeout(() => setShowHabits(false), 10000);
 	};
 
 	// Calculate completion status for past days only if there were habits

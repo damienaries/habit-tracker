@@ -7,9 +7,7 @@ function isMonday(date) {
 export default function DayCardWrapper({ date, today, children, todayRef }) {
 	const isToday = isSameDay(date, today);
 
-	const mondaySeparator = isMonday(date)
-		? 'pt-4 mt-4 border-t border-gray-300'
-		: '';
+	const mondaySeparator = isMonday(date) ? 'pt-4 mt-4 border-t border-gray-300' : '';
 
 	return (
 		<div
