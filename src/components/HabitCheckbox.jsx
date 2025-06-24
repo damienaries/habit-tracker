@@ -11,23 +11,20 @@ function getStartOfWeek(date) {
 	return d;
 }
 
-export default function HabitCheckbox({ habit, date }) {
+export default function HabitCheckbox({ habit, date, editing = false }) {
 	const queryClient = useQueryClient();
 	const isToday = isSameDay(date, new Date());
+	const isPaused = habit.isPaused === true;
 
 	// Use completions array for done state
 	const isWeeklyHabit = habit.frequency === 'weekly' && habit.timesPerPeriod;
 	let completions = [];
 	if (isWeeklyHabit) {
-		completions = Array.isArray(habit.weeklyCompletions)
-			? habit.weeklyCompletions
-			: [];
+		completions = Array.isArray(habit.weeklyCompletions) ? habit.weeklyCompletions : [];
 	} else {
-		completions = Array.isArray(habit.completedDates)
-			? habit.completedDates
-			: [];
+		completions = Array.isArray(habit.completedDates) ? habit.completedDates : [];
 	}
-	const isDone = completions.some((d) => isSameDay(new Date(d), date));
+	const isDone = completions.some(d => isSameDay(new Date(d), date));
 
 	const mutation = useMutation({
 		mutationFn: async () => {
@@ -46,8 +43,12 @@ export default function HabitCheckbox({ habit, date }) {
 		},
 	});
 
-	const handleToggle = () => {
-		if (!isToday || mutation.isPending) return;
+	const handleToggle = e => {
+		// Prevent event from bubbling up to parent components
+		e.stopPropagation();
+
+		// Allow toggling if it's today OR if we're in edit mode for past days (but not if paused)
+		if ((!isToday && !editing) || mutation.isPending || isPaused) return;
 		mutation.mutate();
 	};
 
@@ -57,10 +58,11 @@ export default function HabitCheckbox({ habit, date }) {
 				type="checkbox"
 				checked={isDone}
 				onChange={handleToggle}
-				disabled={!isToday || mutation.isPending}
+				disabled={(!isToday && !editing) || mutation.isPending || isPaused}
 				className={`w-5 h-5 rounded-md p-1	accent-black
 					transition-all duration-200 ease-in-out
-					${!isToday && 'opacity-50 cursor-not-allowed'}
+					${!isToday && !editing && 'opacity-50 cursor-not-allowed'}
+					${isPaused && 'opacity-30 cursor-not-allowed'}
 					${mutation.isPending && 'animate-pulse'}
 				`}
 				aria-label={isDone ? 'Mark habit as not done' : 'Mark habit as done'}

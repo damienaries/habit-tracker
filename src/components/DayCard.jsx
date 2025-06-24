@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 
 export default function DayCard({ date }) {
+	const [editing, setEditing] = useState(false);
 	const { user } = useUser();
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
@@ -34,9 +35,11 @@ export default function DayCard({ date }) {
 
 		setShowHabits(true);
 
-		// Clear any existing timer and set new one
-		if (timerRef.current) clearTimeout(timerRef.current);
-		timerRef.current = setTimeout(() => setShowHabits(false), 10000);
+		// Clear any existing timer and set new one unless editing
+		if (!editing) {
+			if (timerRef.current) clearTimeout(timerRef.current);
+			timerRef.current = setTimeout(() => setShowHabits(false), 10000);
+		}
 	};
 
 	// Calculate completion status for past days only if there were habits
@@ -65,6 +68,11 @@ export default function DayCard({ date }) {
 		return 'incomplete';
 	};
 
+	const editPastHabits = e => {
+		e.stopPropagation();
+		setEditing(!editing);
+	};
+
 	const status = isPast ? getCompletionStatus() : 'future';
 
 	const statusStyles = {
@@ -87,10 +95,14 @@ export default function DayCard({ date }) {
 			<div className="flex justify-between items-center">
 				<h2 className="text-lg font-semibold text-gray-800">{formatDateTitle(date)}</h2>
 				{isPast && habits && habits.length > 0 && (
-					<div className="text-sm">
+					<div
+						className={`text-sm cursor-pointer ${editing ? 'text-gray-400 text-sm' : ''}`}
+						onClick={editPastHabits}
+					>
 						{status === 'completed' && '✅'}
 						{status === 'partial' && '🟡'}
 						{status === 'incomplete' && '❌'}
+						{editing && ' (correcting...)'}
 					</div>
 				)}
 			</div>
@@ -102,7 +114,7 @@ export default function DayCard({ date }) {
 			{shouldShowHabits && habits?.length > 0 && (
 				<div className="space-y-2 mt-3">
 					{habits.map(habit => (
-						<HabitCard key={habit.id} habit={habit} date={date} />
+						<HabitCard key={habit.id} habit={habit} date={date} editing={editing} />
 					))}
 				</div>
 			)}

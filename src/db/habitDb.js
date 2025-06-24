@@ -5,7 +5,7 @@ export const db = new Dexie('HabitTrackerDB');
 db.version(2).stores({
 	users: '++id, name, createdAt, settings',
 	habits:
-		'++id, userId, name, frequency, startDate, endDate, lastDone, streak, timesPerPeriod, customInterval, weeklyCompletions, completedDates',
+		'++id, userId, name, frequency, startDate, endDate, lastDone, streak, timesPerPeriod, customInterval, weeklyCompletions, completedDates, isPaused',
 });
 
 // Helper to get start of week (Monday)

@@ -6,7 +6,7 @@ import { updateHabit } from '../services/habitService';
 import ButtonComponent from './elements/ButtonComponent';
 import { formatDateTitle } from '../utils/dateHelpers';
 
-export default function HabitCard({ habit, date, dayCard = true }) {
+export default function HabitCard({ habit, date, dayCard = true, editing = false }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editedDetails, setEditedDetails] = useState(habit.details || '');
 	const [editedFrequency, setEditedFrequency] = useState(habit.frequency);
@@ -14,6 +14,7 @@ export default function HabitCard({ habit, date, dayCard = true }) {
 
 	const isWeeklyHabit = habit.frequency === 'weekly' && habit.timesPerPeriod;
 	const isTerminated = habit.endDate != null;
+	const isPaused = habit.isPaused === true;
 
 	// Use completions array for done state
 	let completions = [];
@@ -77,19 +78,40 @@ export default function HabitCard({ habit, date, dayCard = true }) {
 		setIsEditing(false);
 	};
 
+	const handlePause = async () => {
+		await updateHabit(habit.id, {
+			isPaused: true,
+		});
+		setIsEditing(false);
+	};
+
+	const handleUnpause = async () => {
+		await updateHabit(habit.id, {
+			isPaused: false,
+		});
+		setIsEditing(false);
+	};
+
 	return (
 		<div
 			key={habit.id}
 			className={`p-3 rounded-md w-full flex items-start gap-3 transition-colors duration-200
 				${dayCard ? (alreadyDone ? 'bg-green-50' : 'bg-gray-50') : ''}
 				${weeklyProgress?.isWeekComplete ? 'opacity-75' : 'opacity-100'}
+				${isPaused ? 'opacity-50 bg-gray-100' : ''}
 			`}
 		>
-			{dayCard && <HabitCheckbox habit={habit} date={date} />}
+			{dayCard && <HabitCheckbox habit={habit} date={date} editing={editing} />}
 
 			<div className="flex-1">
-				<div className="font-medium capitalize">{habit.name}</div>
+				<div className="font-medium capitalize flex items-center gap-2">
+					{habit.name}
+					{isPaused && (
+						<span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Paused</span>
+					)}
+				</div>
 
+				{/* todo split into component */}
 				{isEditing ? (
 					<div className="mt-2 space-y-2">
 						<div>
@@ -136,9 +158,20 @@ export default function HabitCard({ habit, date, dayCard = true }) {
 								</ButtonComponent>
 							</div>
 							{!isTerminated ? (
-								<ButtonComponent onClick={handleTerminate} variant="danger" size="sm">
-									Terminate
-								</ButtonComponent>
+								<div className="flex gap-2">
+									{isPaused ? (
+										<ButtonComponent onClick={handleUnpause} variant="success" size="sm">
+											Unpause
+										</ButtonComponent>
+									) : (
+										<ButtonComponent onClick={handlePause} variant="warning" size="sm">
+											Pause
+										</ButtonComponent>
+									)}
+									<ButtonComponent onClick={handleTerminate} variant="danger" size="sm">
+										Terminate
+									</ButtonComponent>
+								</div>
 							) : (
 								<p>Habit completed on: {formatDateTitle(new Date(habit.endDate))}</p>
 							)}

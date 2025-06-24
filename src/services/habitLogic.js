@@ -1,6 +1,5 @@
 import { db } from '../db/habitDb';
 import { getUniqueDateIdentifier, getStartOfWeek } from '../utils/dateHelpers';
-import { useUser } from '../contexts/UserContext';
 
 export async function getHabitsForDate(date, userId) {
 	if (!userId) {
@@ -53,6 +52,7 @@ export async function getHabitsForDate(date, userId) {
 			}
 		}
 
+		// Add habit to results (including paused ones)
 		activeHabits.push(habit);
 	}
 
