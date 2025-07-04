@@ -46,8 +46,13 @@ export default function DayCard({ date }) {
 	const getCompletionStatus = () => {
 		if (!habits || habits.length === 0) return 'no-habits';
 
-		// For past days, check if habits were completed on that specific date
-		const allCompleted = habits.every(habit => {
+		// Filter out paused habits for completion calculation
+		const activeHabits = habits.filter(habit => !habit.isPaused);
+
+		if (activeHabits.length === 0) return 'no-habits';
+
+		// For past days, check if active habits were completed on that specific date
+		const allCompleted = activeHabits.every(habit => {
 			const completions =
 				habit.frequency === 'weekly' && habit.timesPerPeriod
 					? habit.weeklyCompletions || []
@@ -55,7 +60,7 @@ export default function DayCard({ date }) {
 			return completions.some(d => isSameDay(new Date(d), date));
 		});
 
-		const someCompleted = habits.some(habit => {
+		const someCompleted = activeHabits.some(habit => {
 			const completions =
 				habit.frequency === 'weekly' && habit.timesPerPeriod
 					? habit.weeklyCompletions || []

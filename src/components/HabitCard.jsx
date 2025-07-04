@@ -6,6 +6,31 @@ import { updateHabit } from '../services/habitService';
 import ButtonComponent from './elements/ButtonComponent';
 import { formatDateTitle } from '../utils/dateHelpers';
 
+// Helper function to format frequency in user-friendly way
+const formatFrequency = (frequency, timesPerPeriod, customInterval) => {
+	switch (frequency) {
+		case 'daily':
+			return 'Daily';
+		case 'weekly':
+			if (!timesPerPeriod) return 'Weekly';
+			if (timesPerPeriod === 1) return 'Once a week';
+			if (timesPerPeriod === 2) return 'Twice a week';
+			return `${timesPerPeriod} times a week`;
+		case 'monthly':
+			if (!timesPerPeriod) return 'Monthly';
+			if (timesPerPeriod === 1) return 'Once a month';
+			if (timesPerPeriod === 2) return 'Twice a month';
+			return `${timesPerPeriod} times a month`;
+		case 'every_n_days':
+			if (!customInterval) return 'Every N days';
+			if (customInterval === 1) return 'Daily';
+			if (customInterval === 2) return 'Every 2 days';
+			return `Every ${customInterval} days`;
+		default:
+			return frequency;
+	}
+};
+
 export default function HabitCard({ habit, date, dayCard = true, editing = false }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editedDetails, setEditedDetails] = useState(habit.details || '');
@@ -25,7 +50,7 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 	}
 	const alreadyDone = completions.some(d => isSameDay(new Date(d), date));
 
-	const iconScale = 1 + Math.floor(habit.streak / 5) * 0.25;
+	const iconScale = Math.min(1 + Math.floor(habit.streak / 5) * 0.25, 2);
 
 	// Get weekly completions if it's a weekly habit
 	const getWeeklyProgress = () => {
@@ -192,8 +217,8 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 						)}
 						{!dayCard && (
 							<div className="text-xs text-gray-500 mt-1">
-								Frequency: {habit.frequency}
-								{habit.timesPerPeriod ? ` (${habit.timesPerPeriod}× per ${habit.frequency})` : ''}
+								Frequency:{' '}
+								{formatFrequency(habit.frequency, habit.timesPerPeriod, habit.customInterval)}
 							</div>
 						)}
 					</>
@@ -201,7 +226,7 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 			</div>
 
 			<div className="flex flex-col items-end gap-2">
-				<div className="text-xs text-gray-500 flex items-center gap-1">
+				<div className="text-xs text-gray-500 flex items-center gap-2">
 					<Icon icon="fire" color="#f97316" size="sm" scale={iconScale} />
 					{habit.streak}
 				</div>
