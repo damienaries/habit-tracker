@@ -39,6 +39,7 @@ export class NotificationService {
 			});
 
 			// Send subscription to backend
+			console.log('Sending subscription to backend...');
 			const response = await fetch('/.netlify/functions/send-notifications', {
 				method: 'POST',
 				headers: {
@@ -53,8 +54,13 @@ export class NotificationService {
 				}),
 			});
 
+			console.log('Response status:', response.status);
+			console.log('Response ok:', response.ok);
+
 			if (!response.ok) {
-				throw new Error('Failed to register subscription');
+				const errorText = await response.text();
+				console.error('Response error:', errorText);
+				throw new Error(`Failed to register subscription: ${response.status} ${errorText}`);
 			}
 
 			console.log('Successfully registered for push notifications');
@@ -70,13 +76,14 @@ export class NotificationService {
 		return this.registerForPushNotifications(userId, habits, settings);
 	}
 
-	static async clearAllPushSubscriptions() {
+	static async clearAllPushSubscriptions(userId) {
 		if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
 			console.log('Push notifications not supported');
 			return false;
 		}
 
 		try {
+			// Unsubscribe from push manager
 			const registration = await navigator.serviceWorker.getRegistration();
 			if (registration) {
 				const subscription = await registration.pushManager.getSubscription();
@@ -85,6 +92,25 @@ export class NotificationService {
 					console.log('Cleared existing push notification subscription');
 				}
 			}
+
+			// Also notify backend to remove subscription
+			if (userId) {
+				const response = await fetch('/.netlify/functions/send-notifications', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						action: 'unsubscribe',
+						userId,
+					}),
+				});
+
+				if (response.ok) {
+					console.log('Successfully unsubscribed from backend');
+				}
+			}
+
 			return true;
 		} catch (error) {
 			console.error('Error clearing push subscriptions:', error);

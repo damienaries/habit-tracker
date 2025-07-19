@@ -1,4 +1,5 @@
 const webpush = require('web-push');
+const fs = require('fs');
 
 // Configure VAPID keys
 const vapidKeys = {
@@ -7,15 +8,35 @@ const vapidKeys = {
 };
 
 webpush.setVapidDetails(
-	'mailto:your-email@example.com', // Replace with your email
+	'mailto:damien.aries@gmail.com', // Replace with your email
 	vapidKeys.publicKey,
 	vapidKeys.privateKey
 );
 
-// Simple in-memory storage
-let subscriptions = [];
+// File-based storage for subscriptions
+const SUBSCRIPTIONS_FILE = '/tmp/subscriptions.json';
 
-exports.handler = async (event, context) => {
+function loadSubscriptions() {
+	try {
+		if (fs.existsSync(SUBSCRIPTIONS_FILE)) {
+			const data = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf8');
+			return JSON.parse(data);
+		}
+	} catch (error) {
+		console.error('Error loading subscriptions:', error);
+	}
+	return [];
+}
+
+function saveSubscriptions(subscriptions) {
+	try {
+		fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2));
+	} catch (error) {
+		console.error('Error saving subscriptions:', error);
+	}
+}
+
+exports.handler = async (event, _context) => {
 	const headers = {
 		'Access-Control-Allow-Origin': '*',
 		'Access-Control-Allow-Headers': 'Content-Type',
@@ -29,6 +50,18 @@ exports.handler = async (event, context) => {
 	try {
 		const { httpMethod, body } = event;
 
+		if (httpMethod === 'GET') {
+			return {
+				statusCode: 200,
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					message: 'Notification function is working!',
+					timestamp: new Date().toISOString(),
+					totalSubscriptions: loadSubscriptions().length,
+				}),
+			};
+		}
+
 		if (httpMethod === 'POST') {
 			const data = JSON.parse(body);
 
@@ -36,16 +69,28 @@ exports.handler = async (event, context) => {
 				// Store subscription
 				const { subscription, userId, settings, habits } = data;
 
+				console.log(`Storing subscription for user ${userId}`);
+
+				// Load existing subscriptions
+				const subscriptions = loadSubscriptions();
+
 				// Remove existing subscription for this user
-				subscriptions = subscriptions.filter(sub => sub.userId !== userId);
+				const filteredSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
 
 				// Add new subscription
-				subscriptions.push({ userId, subscription, settings, habits });
+				filteredSubscriptions.push({ userId, subscription, settings, habits });
+
+				// Save to file
+				saveSubscriptions(filteredSubscriptions);
+
+				console.log(
+					`Successfully stored subscription. Total subscriptions: ${filteredSubscriptions.length}`
+				);
 
 				return {
 					statusCode: 200,
 					headers: { ...headers, 'Content-Type': 'application/json' },
-					body: JSON.stringify({ success: true }),
+					body: JSON.stringify({ success: true, totalSubscriptions: filteredSubscriptions.length }),
 				};
 			}
 
@@ -53,6 +98,10 @@ exports.handler = async (event, context) => {
 				const currentHour = new Date().getHours();
 				const isMorning = currentHour >= 8 && currentHour <= 10;
 				const isEvening = currentHour >= 20 && currentHour <= 22;
+
+				console.log(
+					`Notification check - Hour: ${currentHour}, Morning: ${isMorning}, Evening: ${isEvening}`
+				);
 
 				if (!isMorning && !isEvening) {
 					return {
@@ -62,20 +111,34 @@ exports.handler = async (event, context) => {
 					};
 				}
 
+				// Load subscriptions from file
+				const subscriptions = loadSubscriptions();
+				console.log(`Loaded ${subscriptions.length} subscriptions`);
+
 				const notificationsSent = [];
 
 				for (const userData of subscriptions) {
 					const { subscription, settings, habits, userId } = userData;
 
 					// Check user preferences
-					if (isMorning && !settings.morningNotifications) continue;
-					if (isEvening && !settings.eveningNotifications) continue;
+					if (isMorning && !settings.morningNotifications) {
+						console.log(`Skipping morning notification for user ${userId} - disabled`);
+						continue;
+					}
+					if (isEvening && !settings.eveningNotifications) {
+						console.log(`Skipping evening notification for user ${userId} - disabled`);
+						continue;
+					}
 
 					const message = isMorning
 						? generateMorningMessage(habits)
 						: generateEveningMessage(habits);
 
 					const title = isMorning ? "Today's Habits" : 'Habit Check-in';
+
+					console.log(
+						`Sending ${isMorning ? 'morning' : 'evening'} notification to user ${userId}: ${title}`
+					);
 
 					try {
 						await webpush.sendNotification(
@@ -93,10 +156,14 @@ exports.handler = async (event, context) => {
 						);
 
 						notificationsSent.push(userId);
+						console.log(`Successfully sent notification to user ${userId}`);
 					} catch (error) {
 						console.error(`Failed to send notification to user ${userId}:`, error);
 						if (error.statusCode === 410) {
-							subscriptions = subscriptions.filter(sub => sub.userId !== userId);
+							// Remove invalid subscription
+							const updatedSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
+							saveSubscriptions(updatedSubscriptions);
+							console.log(`Removed invalid subscription for user ${userId}`);
 						}
 					}
 				}
@@ -109,6 +176,25 @@ exports.handler = async (event, context) => {
 						notificationsSent,
 						totalSubscriptions: subscriptions.length,
 					}),
+				};
+			}
+
+			if (data.action === 'unsubscribe') {
+				const { userId } = data;
+				console.log(`Unsubscribing user ${userId}`);
+
+				const subscriptions = loadSubscriptions();
+				const filteredSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
+				saveSubscriptions(filteredSubscriptions);
+
+				console.log(
+					`Unsubscribed user ${userId}. Total subscriptions: ${filteredSubscriptions.length}`
+				);
+
+				return {
+					statusCode: 200,
+					headers: { ...headers, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ success: true, totalSubscriptions: filteredSubscriptions.length }),
 				};
 			}
 		}
