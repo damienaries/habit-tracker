@@ -67,24 +67,31 @@ exports.handler = async (event, _context) => {
 
 			if (data.action === 'subscribe') {
 				// Store subscription
-				const { subscription, userId, settings, habits } = data;
+				const { subscription, userId, originalUserId, deviceId, settings, habits } = data;
 
-				console.log(`Storing subscription for user ${userId}`);
+				console.log(`Storing subscription for user ${originalUserId} on device ${deviceId}`);
 
 				// Load existing subscriptions
 				const subscriptions = loadSubscriptions();
 
-				// Remove existing subscription for this user
+				// Remove existing subscription for this specific device/user combination
 				const filteredSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
 
 				// Add new subscription
-				filteredSubscriptions.push({ userId, subscription, settings, habits });
+				filteredSubscriptions.push({
+					userId,
+					originalUserId,
+					deviceId,
+					subscription,
+					settings,
+					habits,
+				});
 
 				// Save to file
 				saveSubscriptions(filteredSubscriptions);
 
 				console.log(
-					`Successfully stored subscription. Total subscriptions: ${filteredSubscriptions.length}`
+					`Successfully stored subscription for user ${originalUserId} on device ${deviceId}. Total device subscriptions: ${filteredSubscriptions.length}`
 				);
 
 				return {
@@ -118,15 +125,19 @@ exports.handler = async (event, _context) => {
 				const notificationsSent = [];
 
 				for (const userData of subscriptions) {
-					const { subscription, settings, habits, userId } = userData;
+					const { subscription, settings, habits, userId, originalUserId, deviceId } = userData;
 
 					// Check user preferences
 					if (isMorning && !settings.morningNotifications) {
-						console.log(`Skipping morning notification for user ${userId} - disabled`);
+						console.log(
+							`Skipping morning notification for user ${originalUserId} on device ${deviceId} - disabled`
+						);
 						continue;
 					}
 					if (isEvening && !settings.eveningNotifications) {
-						console.log(`Skipping evening notification for user ${userId} - disabled`);
+						console.log(
+							`Skipping evening notification for user ${originalUserId} on device ${deviceId} - disabled`
+						);
 						continue;
 					}
 
@@ -137,7 +148,7 @@ exports.handler = async (event, _context) => {
 					const title = isMorning ? "Today's Habits" : 'Habit Check-in';
 
 					console.log(
-						`Sending ${isMorning ? 'morning' : 'evening'} notification to user ${userId}: ${title}`
+						`Sending ${isMorning ? 'morning' : 'evening'} notification to user ${originalUserId} on device ${deviceId}: ${title}`
 					);
 
 					try {
@@ -155,15 +166,22 @@ exports.handler = async (event, _context) => {
 							})
 						);
 
-						notificationsSent.push(userId);
-						console.log(`Successfully sent notification to user ${userId}`);
+						notificationsSent.push(originalUserId);
+						console.log(
+							`Successfully sent notification to user ${originalUserId} on device ${deviceId}`
+						);
 					} catch (error) {
-						console.error(`Failed to send notification to user ${userId}:`, error);
+						console.error(
+							`Failed to send notification to user ${originalUserId} on device ${deviceId}:`,
+							error
+						);
 						if (error.statusCode === 410) {
 							// Remove invalid subscription
 							const updatedSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
 							saveSubscriptions(updatedSubscriptions);
-							console.log(`Removed invalid subscription for user ${userId}`);
+							console.log(
+								`Removed invalid subscription for user ${originalUserId} on device ${deviceId}`
+							);
 						}
 					}
 				}
@@ -180,15 +198,15 @@ exports.handler = async (event, _context) => {
 			}
 
 			if (data.action === 'unsubscribe') {
-				const { userId } = data;
-				console.log(`Unsubscribing user ${userId}`);
+				const { userId, originalUserId, deviceId } = data;
+				console.log(`Unsubscribing user ${originalUserId} on device ${deviceId}`);
 
 				const subscriptions = loadSubscriptions();
 				const filteredSubscriptions = subscriptions.filter(sub => sub.userId !== userId);
 				saveSubscriptions(filteredSubscriptions);
 
 				console.log(
-					`Unsubscribed user ${userId}. Total subscriptions: ${filteredSubscriptions.length}`
+					`Unsubscribed user ${originalUserId} on device ${deviceId}. Total device subscriptions: ${filteredSubscriptions.length}`
 				);
 
 				return {

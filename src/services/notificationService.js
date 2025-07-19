@@ -38,6 +38,10 @@ export class NotificationService {
 				applicationServerKey: this.urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
 			});
 
+			// Generate unique device ID
+			const deviceId = this.getDeviceId();
+			const uniqueUserId = `${userId}-${deviceId}`;
+
 			// Send subscription to backend
 			console.log('Sending subscription to backend...');
 			const response = await fetch('/.netlify/functions/send-notifications', {
@@ -48,7 +52,9 @@ export class NotificationService {
 				body: JSON.stringify({
 					action: 'subscribe',
 					subscription,
-					userId,
+					userId: uniqueUserId,
+					originalUserId: userId,
+					deviceId,
 					habits,
 					settings,
 				}),
@@ -95,6 +101,9 @@ export class NotificationService {
 
 			// Also notify backend to remove subscription
 			if (userId) {
+				const deviceId = this.getDeviceId();
+				const uniqueUserId = `${userId}-${deviceId}`;
+
 				const response = await fetch('/.netlify/functions/send-notifications', {
 					method: 'POST',
 					headers: {
@@ -102,7 +111,9 @@ export class NotificationService {
 					},
 					body: JSON.stringify({
 						action: 'unsubscribe',
-						userId,
+						userId: uniqueUserId,
+						originalUserId: userId,
+						deviceId,
 					}),
 				});
 
@@ -116,6 +127,20 @@ export class NotificationService {
 			console.error('Error clearing push subscriptions:', error);
 			return false;
 		}
+	}
+
+	// Generate a unique device ID
+	static getDeviceId() {
+		// Try to get existing device ID from localStorage
+		let deviceId = localStorage.getItem('deviceId');
+
+		if (!deviceId) {
+			// Generate a new device ID
+			deviceId = crypto.randomUUID();
+			localStorage.setItem('deviceId', deviceId);
+		}
+
+		return deviceId;
 	}
 
 	// Helper function to convert VAPID key
