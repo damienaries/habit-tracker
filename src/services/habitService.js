@@ -26,8 +26,10 @@ export async function createHabit({
 		timesPerPeriod,
 		details,
 		streak: 0,
-		completedDays: 0,
 		lastDone,
+		isPaused: false,
+		completedDates: [],
+		weeklyCompletions: [],
 	});
 }
 
@@ -37,26 +39,6 @@ export async function getAllHabits(userId) {
 		throw new Error('User ID is required');
 	}
 	return await db.habits.where('userId').equals(userId).toArray();
-}
-
-// Get habits for a specific date
-export async function getHabitsForDate(userId, date) {
-	if (!userId) {
-		throw new Error('User ID is required');
-	}
-	const habits = await db.habits.where('userId').equals(userId).toArray();
-	return habits.filter(habit => {
-		const startDate = new Date(habit.startDate);
-		const endDate = habit.endDate ? new Date(habit.endDate) : null;
-		const checkDate = new Date(date);
-
-		// Set all dates to midnight for comparison
-		startDate.setHours(0, 0, 0, 0);
-		checkDate.setHours(0, 0, 0, 0);
-		if (endDate) endDate.setHours(0, 0, 0, 0);
-
-		return checkDate >= startDate && (!endDate || checkDate <= endDate);
-	});
 }
 
 // Get a habit by ID
@@ -71,37 +53,6 @@ export async function getHabit(id) {
 	}
 
 	return habit;
-}
-
-// Mark a habit as completed
-export async function completeHabit(userId, habitId) {
-	if (!userId || !habitId) {
-		throw new Error('User ID and Habit ID are required');
-	}
-
-	const date = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-
-	// Check if the habit exists and belongs to the user
-	const habit = await db.habits
-		.where('userId')
-		.equals(userId)
-		.and(h => h.id === habitId)
-		.first();
-	if (!habit) {
-		throw new Error(`Habit with ID ${habitId} not found for user ${userId}`);
-	}
-
-	// Check if already completed today
-	const alreadyCompleted = habit.completions?.some(c => c.date === date);
-	if (alreadyCompleted) {
-		return;
-	}
-
-	await db.habits.update(habitId, {
-		completedDays: (habit.completedDays || 0) + 1,
-		streak: (habit.streak || 0) + 1,
-		completions: [...(habit.completions || []), { date, id: crypto.randomUUID() }],
-	});
 }
 
 // update a habit
@@ -130,5 +81,4 @@ export async function deleteHabit(id) {
 	}
 
 	await db.habits.delete(id);
-	await db.completions.where({ habitId: id }).delete();
 }

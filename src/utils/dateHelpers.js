@@ -50,3 +50,13 @@ export function getStartOfToday() {
 	date.setHours(0, 0, 0, 0);
 	return date;
 }
+
+// Stable YYYY-MM-DD key for the date as it reads on the user's own calendar.
+// Unlike getUniqueDateIdentifier this never shifts across the UTC boundary, so
+// it is safe to build cache keys from.
+export function getLocalDateKey(date) {
+	const d = new Date(date);
+	const month = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${d.getFullYear()}-${month}-${day}`;
+}

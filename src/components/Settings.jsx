@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Icon from './icons/Icon';
 import ButtonComponent from './elements/ButtonComponent';
 import ToggleButton from './elements/ToggleButton';
 import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
+import { getAllHabits } from '../services/habitService';
+import { habitKeys } from '../queries/habitKeys';
 
 export default function Settings({ isOpen, onClose }) {
 	const { user, updateUserSettings, logout } = useUser();
+	const { data: habits = [] } = useQuery({
+		queryKey: habitKeys.byUser(user?.id),
+		queryFn: () => getAllHabits(user.id),
+		enabled: !!user,
+	});
 	const [settings, setSettings] = useState({
 		morningNotifications: user?.settings?.morningNotifications ?? true,
 		eveningNotifications: user?.settings?.eveningNotifications ?? true,
@@ -37,7 +45,7 @@ export default function Settings({ isOpen, onClose }) {
 		if (value && user?.id) {
 			setIsRegistering(true);
 			try {
-				await NotificationService.updateNotificationSettings(user.id, user.habits, {
+				await NotificationService.registerForPushNotificationsDebounced(user.id, habits, {
 					...user.settings,
 					[key]: value,
 				});
@@ -52,9 +60,10 @@ export default function Settings({ isOpen, onClose }) {
 	// Register for notifications when component mounts
 	useEffect(() => {
 		if (user?.id && (settings.morningNotifications || settings.eveningNotifications)) {
-			NotificationService.registerForPushNotifications(user.id, user.habits, settings);
+			console.log('Settings: Registering notifications on mount');
+			NotificationService.registerForPushNotificationsDebounced(user.id, habits, settings);
 		}
-	}, [user?.id]);
+	}, [user?.id, settings.morningNotifications, settings.eveningNotifications]);
 
 	// Format the creation date
 	const formatDate = dateString => {

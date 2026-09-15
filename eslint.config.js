@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 export default [
-	{ ignores: ['dist'] },
+	// Generated output and vendored function bundles — linting them buried the
+	// handful of real findings under ~170 errors nobody could act on.
+	{ ignores: ['dist', 'dev-dist', '.netlify', '**/node_modules'] },
 	{
 		files: ['**/*.{js,jsx}'],
 		languageOptions: {

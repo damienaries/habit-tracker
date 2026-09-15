@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { createHabit } from '../services/habitService';
+import { useCreateHabit } from '../hooks/useHabitMutations';
 import ButtonComponent from './elements/ButtonComponent';
 import { normalizeDate } from '../db/habitDb';
 import { useUser } from '../contexts/UserContext';
 
 export default function HabitForm({ onCreate }) {
 	const { user } = useUser();
+	const createMutation = useCreateHabit();
 	const [name, setName] = useState('');
 	const [frequency, setFrequency] = useState('daily');
 	const [customInterval, setCustomInterval] = useState('');
@@ -46,7 +47,7 @@ export default function HabitForm({ onCreate }) {
 		if (!validateForm()) return;
 
 		try {
-			await createHabit({
+			await createMutation.mutateAsync({
 				userId: user.id,
 				name,
 				frequency,
@@ -187,7 +188,9 @@ export default function HabitForm({ onCreate }) {
 				/>
 			</label>
 
-			<ButtonComponent>Save Habit</ButtonComponent>
+			<ButtonComponent disabled={createMutation.isPending}>
+				{createMutation.isPending ? 'Saving...' : 'Save Habit'}
+			</ButtonComponent>
 		</form>
 	);
 }

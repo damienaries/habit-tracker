@@ -69,6 +69,22 @@ exports.handler = async (event, _context) => {
 				// Store subscription
 				const { subscription, userId, originalUserId, deviceId, settings, habits } = data;
 
+				// Validate required fields
+				if (!originalUserId || !deviceId || !subscription) {
+					console.error('Missing required fields:', {
+						originalUserId,
+						deviceId,
+						subscription: !!subscription,
+					});
+					return {
+						statusCode: 400,
+						headers: { ...headers, 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							error: 'Missing required fields: originalUserId, deviceId, or subscription',
+						}),
+					};
+				}
+
 				console.log(`Storing subscription for user ${originalUserId} on device ${deviceId}`);
 
 				// Load existing subscriptions

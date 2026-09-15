@@ -13,7 +13,15 @@ if (import.meta.env.DEV_SEEDER === 'true') {
 	});
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			// Reads are local IndexedDB lookups, so re-running one is cheap.
+			staleTime: 1000 * 60 * 5,
+			gcTime: 1000 * 60 * 30,
+		},
+	},
+});
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>

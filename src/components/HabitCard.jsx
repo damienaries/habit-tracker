@@ -2,7 +2,7 @@ import { isSameDay } from '../utils/dateHelpers';
 import HabitCheckbox from './HabitCheckbox';
 import Icon from './icons/Icon';
 import { useState } from 'react';
-import { updateHabit } from '../services/habitService';
+import { useUpdateHabit } from '../hooks/useHabitMutations';
 import ButtonComponent from './elements/ButtonComponent';
 import { formatDateTitle } from '../utils/dateHelpers';
 
@@ -32,6 +32,7 @@ const formatFrequency = (frequency, timesPerPeriod, customInterval) => {
 };
 
 export default function HabitCard({ habit, date, dayCard = true, editing = false }) {
+	const updateMutation = useUpdateHabit();
 	const [isEditing, setIsEditing] = useState(false);
 	const [editedDetails, setEditedDetails] = useState(habit.details || '');
 	const [editedFrequency, setEditedFrequency] = useState(habit.frequency);
@@ -83,8 +84,13 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 
 	const weeklyProgress = getWeeklyProgress();
 
-	const handleSave = async () => {
-		await updateHabit(habit.id, {
+	const applyUpdates = async updates => {
+		await updateMutation.mutateAsync({ id: habit.id, updates });
+		setIsEditing(false);
+	};
+
+	const handleSave = () =>
+		applyUpdates({
 			details: editedDetails,
 			frequency: editedFrequency,
 			timesPerPeriod:
@@ -92,30 +98,12 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 					? Number(editedTimesPerPeriod)
 					: null,
 		});
-		setIsEditing(false);
-	};
 
-	const handleTerminate = async () => {
-		const today = new Date();
-		await updateHabit(habit.id, {
-			endDate: today.toISOString(),
-		});
-		setIsEditing(false);
-	};
+	const handleTerminate = () => applyUpdates({ endDate: new Date().toISOString() });
 
-	const handlePause = async () => {
-		await updateHabit(habit.id, {
-			isPaused: true,
-		});
-		setIsEditing(false);
-	};
+	const handlePause = () => applyUpdates({ isPaused: true });
 
-	const handleUnpause = async () => {
-		await updateHabit(habit.id, {
-			isPaused: false,
-		});
-		setIsEditing(false);
-	};
+	const handleUnpause = () => applyUpdates({ isPaused: false });
 
 	return (
 		<div

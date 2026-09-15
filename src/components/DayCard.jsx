@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getHabitsForDate } from '../services/habitLogic';
 import { useState, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { habitKeys } from '../queries/habitKeys';
 
 export default function DayCard({ date }) {
 	const [editing, setEditing] = useState(false);
@@ -19,10 +20,8 @@ export default function DayCard({ date }) {
 		isLoading,
 		error,
 	} = useQuery({
-		queryKey: ['habitsForDate', date.toDateString(), user?.id],
+		queryKey: habitKeys.byDate(user?.id, date),
 		queryFn: () => getHabitsForDate(date, user.id),
-		staleTime: 1000 * 60 * 5,
-		cacheTime: 1000 * 60 * 60,
 		enabled: !!user,
 	});
 

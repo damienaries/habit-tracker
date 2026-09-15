@@ -1,3 +1,16 @@
+// Debounce utility
+function debounce(func, wait) {
+	let timeout;
+	return function executedFunction(...args) {
+		const later = () => {
+			clearTimeout(timeout);
+			func(...args);
+		};
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+	};
+}
+
 export class NotificationService {
 	static async requestPermission() {
 		if (!('Notification' in window)) {
@@ -15,6 +28,12 @@ export class NotificationService {
 	}
 
 	static async registerForPushNotifications(userId, habits, settings) {
+		// Validate inputs
+		if (!userId) {
+			console.error('registerForPushNotifications: userId is required');
+			return false;
+		}
+
 		if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
 			console.log('Push notifications not supported');
 			return false;
@@ -41,6 +60,8 @@ export class NotificationService {
 			// Generate unique device ID
 			const deviceId = this.getDeviceId();
 			const uniqueUserId = `${userId}-${deviceId}`;
+
+			console.log(`Registering notifications for user ${userId} on device ${deviceId}`);
 
 			// Send subscription to backend
 			console.log('Sending subscription to backend...');
@@ -157,3 +178,9 @@ export class NotificationService {
 		return outputArray;
 	}
 }
+
+// Create debounced version after class definition
+NotificationService.registerForPushNotificationsDebounced = debounce(
+	NotificationService.registerForPushNotifications.bind(NotificationService),
+	1000
+);

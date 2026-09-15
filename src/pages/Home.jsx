@@ -8,7 +8,6 @@ import {
 	getUniqueDateIdentifier,
 } from '../utils/dateHelpers';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useQueryCleanup } from '../hooks/useQueryCleanup';
 import { useScrollToToday } from '../hooks/useScrollToToday';
 
 export default function Home() {
@@ -17,7 +16,6 @@ export default function Home() {
 
 	const { dates, topRef, bottomRef } = useInfiniteScroll(initialDates);
 	const todayRef = useScrollToToday();
-	useQueryCleanup(dates);
 
 	return (
 		<InfiniteScrollContainer topRef={topRef} bottomRef={bottomRef}>
