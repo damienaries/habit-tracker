@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import ButtonComponent from './elements/ButtonComponent';
 import Icon from './icons/Icon';
-import { db } from '../db/habitDb';
+import { listProfiles } from '../services/profileService';
 
 export default function Onboarding() {
-	const { login, logout, user } = useUser();
+	const { selectProfile, clearProfile, user } = useUser();
 	const [name, setName] = useState('');
 	const [showInstructions, setShowInstructions] = useState(false);
 	const [showExistingUsers, setShowExistingUsers] = useState(false);
@@ -27,9 +27,7 @@ export default function Onboarding() {
 	// Load existing users when showing the list
 	useEffect(() => {
 		if (showExistingUsers) {
-			db.users.toArray().then(users => {
-				setExistingUsers(users);
-			});
+			listProfiles().then(setExistingUsers);
 		}
 	}, [showExistingUsers]);
 
@@ -49,16 +47,16 @@ export default function Onboarding() {
 			habits: [],
 		};
 
-		login(newUser);
+		selectProfile(newUser);
 	};
 
-	const handleLogout = () => {
-		logout();
+	const handleSwitchProfile = () => {
+		clearProfile();
 		setName('');
 	};
 
-	const handleExistingUserLogin = async existingUser => {
-		await login({
+	const handleExistingProfile = async existingUser => {
+		await selectProfile({
 			...existingUser,
 			createdAt: new Date(existingUser.createdAt),
 		});
@@ -154,7 +152,7 @@ export default function Onboarding() {
 							</div>
 
 							<div className="flex gap-4 justify-center">
-								<ButtonComponent onClick={handleLogout} variant="danger">
+								<ButtonComponent onClick={handleSwitchProfile} variant="danger">
 									Logout
 								</ButtonComponent>
 							</div>
@@ -207,7 +205,7 @@ export default function Onboarding() {
 										existingUsers.map(existingUser => (
 											<button
 												key={existingUser.id}
-												onClick={() => handleExistingUserLogin(existingUser)}
+												onClick={() => handleExistingProfile(existingUser)}
 												className="w-full p-3 text-left rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3"
 											>
 												<div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold text-lg">

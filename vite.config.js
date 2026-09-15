@@ -11,7 +11,7 @@ export default defineConfig({
 		tailwindcss(),
 		svgr(),
 		VitePWA({
-			registerType: 'prompt',
+			registerType: 'autoUpdate',
 			includeAssets: ['icons/fire.svg'],
 			manifest: {
 				name: 'Habit Tracker',

@@ -9,7 +9,7 @@ import { getAllHabits } from '../services/habitService';
 import { habitKeys } from '../queries/habitKeys';
 
 export default function Settings({ isOpen, onClose }) {
-	const { user, updateUserSettings, logout } = useUser();
+	const { user, updateUserSettings, clearProfile } = useUser();
 	const { data: habits = [] } = useQuery({
 		queryKey: habitKeys.byUser(user?.id),
 		queryFn: () => getAllHabits(user.id),
@@ -74,8 +74,8 @@ export default function Settings({ isOpen, onClose }) {
 		});
 	};
 
-	const handleLogout = () => {
-		logout();
+	const handleSwitchProfile = () => {
+		clearProfile();
 		onClose();
 	};
 
@@ -167,8 +167,8 @@ export default function Settings({ isOpen, onClose }) {
 						{/* Account Section */}
 						<div className="space-y-4">
 							<h3 className="text-lg font-medium text-gray-900">Account</h3>
-							<ButtonComponent onClick={handleLogout} variant="danger" fullWidth>
-								Logout
+							<ButtonComponent onClick={handleSwitchProfile} variant="danger" fullWidth>
+								Switch profile
 							</ButtonComponent>
 						</div>
 					</div>

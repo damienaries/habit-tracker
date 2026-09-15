@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useCreateHabit } from '../hooks/useHabitMutations';
+import { FREQUENCY } from '../services/schedule';
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 import ButtonComponent from './elements/ButtonComponent';
 import { normalizeDate } from '../db/habitDb';
 import { useUser } from '../contexts/UserContext';
@@ -8,9 +11,11 @@ export default function HabitForm({ onCreate }) {
 	const { user } = useUser();
 	const createMutation = useCreateHabit();
 	const [name, setName] = useState('');
-	const [frequency, setFrequency] = useState('daily');
-	const [customInterval, setCustomInterval] = useState('');
+	const [frequency, setFrequency] = useState(FREQUENCY.DAILY);
+	const [daysOfWeek, setDaysOfWeek] = useState([]);
 	const [timesPerPeriod, setTimesPerPeriod] = useState('');
+	const [durationMinutes, setDurationMinutes] = useState('');
+	const [timeOfDay, setTimeOfDay] = useState('');
 	const [details, setDetails] = useState('');
 	const [startDate, setStartDate] = useState(
 		() => normalizeDate(new Date()).toISOString().split('T')[0]
@@ -25,17 +30,13 @@ export default function HabitForm({ onCreate }) {
 			return false;
 		}
 
-		if (frequency === 'every_n_days' && (!customInterval || +customInterval < 1)) {
-			setError('Please enter a valid interval, must be at least 1');
+		if (frequency === FREQUENCY.SPECIFIC_DAYS && daysOfWeek.length === 0) {
+			setError('Pick at least one day of the week.');
 			return false;
 		}
 
-		if (
-			(frequency === 'weekly' || frequency === 'monthly') &&
-			timesPerPeriod &&
-			+timesPerPeriod < 1
-		) {
-			setError('Times per period must be at least 1.');
+		if (frequency === FREQUENCY.WEEKLY && (!timesPerPeriod || +timesPerPeriod < 1)) {
+			setError('How many times a week? Must be at least 1.');
 			return false;
 		}
 
@@ -54,18 +55,20 @@ export default function HabitForm({ onCreate }) {
 				startDate: normalizeDate(startDate),
 				endDate: endDate ? normalizeDate(endDate) : null,
 				details,
-				customInterval: frequency === 'every_n_days' ? parseInt(customInterval, 10) : null,
+				daysOfWeek: frequency === FREQUENCY.SPECIFIC_DAYS ? daysOfWeek : null,
 				timesPerPeriod:
-					(frequency === 'weekly' || frequency === 'monthly') && timesPerPeriod
-						? parseInt(timesPerPeriod, 10)
-						: null,
+					frequency === FREQUENCY.WEEKLY ? parseInt(timesPerPeriod, 10) : null,
+				durationMinutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
+				timeOfDay: timeOfDay || null,
 			});
 
 			// reset form
 			setName('');
-			setFrequency('daily');
-			setCustomInterval('');
+			setFrequency(FREQUENCY.DAILY);
+			setDaysOfWeek([]);
 			setTimesPerPeriod('');
+			setDurationMinutes('');
+			setTimeOfDay('');
 			setDetails('');
 			setStartDate(normalizeDate(new Date()).toISOString().split('T')[0]);
 			setEndDate('');
@@ -124,38 +127,75 @@ export default function HabitForm({ onCreate }) {
 					onChange={e => setFrequency(e.target.value)}
 					className="form-input"
 				>
-					<option value="daily">Daily</option>
-					<option value="weekly">Weekly</option>
-					<option value="monthly">Monthly</option>
-					<option value="every_n_days">Every N Days</option>
+					<option value={FREQUENCY.DAILY}>Every day</option>
+					<option value={FREQUENCY.SPECIFIC_DAYS}>On specific days</option>
+					<option value={FREQUENCY.WEEKLY}>A number of times a week</option>
 				</select>
 			</label>
 
-			{frequency === 'every_n_days' && (
-				<label>
-					<span className="form-label">Repeat every how many days? *</span>
-					<input
-						type="number"
-						className="form-input"
-						min="1"
-						value={customInterval}
-						onChange={e => setCustomInterval(e.target.value)}
-					/>
-				</label>
+			{frequency === FREQUENCY.SPECIFIC_DAYS && (
+				<div>
+					<span className="form-label">Which days? *</span>
+					<div className="flex flex-wrap gap-2 mt-1">
+						{DAY_NAMES.map((label, day) => (
+							<button
+								key={day}
+								type="button"
+								aria-pressed={daysOfWeek.includes(day)}
+								onClick={() =>
+									setDaysOfWeek(prev =>
+										prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+									)
+								}
+								className={`px-3 py-2 rounded-md border text-sm transition-colors ${
+									daysOfWeek.includes(day)
+										? 'bg-gray-800 text-white border-gray-800'
+										: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+								}`}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+				</div>
 			)}
 
-			{(frequency === 'weekly' || frequency === 'monthly') && (
+			{frequency === FREQUENCY.WEEKLY && (
 				<label>
-					<span className="form-label">Times per period</span>
+					<span className="form-label">Times per week *</span>
 					<input
 						type="number"
 						className="form-input"
 						min="1"
+						max="7"
 						value={timesPerPeriod}
 						onChange={e => setTimesPerPeriod(e.target.value)}
 					/>
 				</label>
 			)}
+
+			<div className="flex gap-4">
+				<label className="flex-1">
+					<span className="form-label">How long? (minutes)</span>
+					<input
+						type="number"
+						className="form-input"
+						min="1"
+						placeholder="30"
+						value={durationMinutes}
+						onChange={e => setDurationMinutes(e.target.value)}
+					/>
+				</label>
+				<label className="flex-1">
+					<span className="form-label">What time?</span>
+					<input
+						type="time"
+						className="form-input"
+						value={timeOfDay}
+						onChange={e => setTimeOfDay(e.target.value)}
+					/>
+				</label>
+			</div>
 
 			<label>
 				<span className="form-label">Details (optional)</span>

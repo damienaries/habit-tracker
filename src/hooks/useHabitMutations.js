@@ -1,6 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { habitKeys } from '../queries/habitKeys';
-import { createHabit, updateHabit } from '../services/habitService';
+import {
+	createHabit,
+	updateHabit,
+	pauseHabit,
+	resumeHabit,
+	endHabit,
+	reopenHabit,
+	deleteHabit,
+} from '../services/habitService';
 import { toggleHabitCompletion } from '../db/habitDb';
 
 // Every habit write goes through one of these hooks. Writing to Dexie directly
@@ -24,4 +32,24 @@ export function useUpdateHabit() {
 
 export function useToggleHabitCompletion() {
 	return useHabitMutation(({ habit, date }) => toggleHabitCompletion(habit, date));
+}
+
+export function usePauseHabit() {
+	return useHabitMutation(({ id }) => pauseHabit(id));
+}
+
+export function useResumeHabit() {
+	return useHabitMutation(({ id }) => resumeHabit(id));
+}
+
+export function useEndHabit() {
+	return useHabitMutation(({ id, reason }) => endHabit(id, reason));
+}
+
+export function useReopenHabit() {
+	return useHabitMutation(({ id }) => reopenHabit(id));
+}
+
+export function useDeleteHabit() {
+	return useHabitMutation(({ id }) => deleteHabit(id));
 }

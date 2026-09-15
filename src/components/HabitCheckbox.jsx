@@ -1,19 +1,11 @@
-import { isSameDay } from '../utils/dateHelpers';
+import { isSameDay, getLocalDateKey } from '../utils/dateHelpers';
 import { useToggleHabitCompletion } from '../hooks/useHabitMutations';
+import { isPausedNow } from '../services/schedule';
 
 export default function HabitCheckbox({ habit, date, editing = false }) {
 	const isToday = isSameDay(date, new Date());
-	const isPaused = habit.isPaused === true;
-
-	// Use completions array for done state
-	const isWeeklyHabit = habit.frequency === 'weekly' && habit.timesPerPeriod;
-	let completions = [];
-	if (isWeeklyHabit) {
-		completions = Array.isArray(habit.weeklyCompletions) ? habit.weeklyCompletions : [];
-	} else {
-		completions = Array.isArray(habit.completedDates) ? habit.completedDates : [];
-	}
-	const isDone = completions.some(d => isSameDay(new Date(d), date));
+	const isPaused = isPausedNow(habit);
+	const isDone = (habit.completions || []).includes(getLocalDateKey(date));
 
 	const mutation = useToggleHabitCompletion();
 

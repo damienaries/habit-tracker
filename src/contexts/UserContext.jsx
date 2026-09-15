@@ -29,7 +29,7 @@ export function UserProvider({ children }) {
 		setLoading(false);
 	};
 
-	const login = async userData => {
+	const selectProfile = async userData => {
 		try {
 			// Check if user already exists
 			const existingUser = await db.users.where('name').equals(userData.name).first();
@@ -38,7 +38,7 @@ export function UserProvider({ children }) {
 			if (existingUser) {
 				userId = existingUser.id;
 			} else {
-				// Create new user
+				// Create a new profile
 				userId = await db.users.add({
 					name: userData.name,
 					createdAt: userData.createdAt,
@@ -52,11 +52,11 @@ export function UserProvider({ children }) {
 			// Load user data
 			await loadUser(userId);
 		} catch (error) {
-			console.error('Error during login:', error);
+			console.error('Error selecting profile:', error);
 		}
 	};
 
-	const logout = () => {
+	const clearProfile = () => {
 		localStorage.removeItem('currentUserId');
 		setUser(null);
 	};
@@ -92,8 +92,8 @@ export function UserProvider({ children }) {
 			value={{
 				user,
 				loading,
-				login,
-				logout,
+				selectProfile,
+				clearProfile,
 				updateUserSettings,
 			}}
 		>

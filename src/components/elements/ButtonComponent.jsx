@@ -24,6 +24,8 @@ export default function ButtonComponent({
 		secondary:
 			'bg-gray-100 text-gray-800 hover:bg-gray-300 focus:ring-gray-500 border border-gray-300',
 		danger: 'bg-red-800 text-white hover:bg-red-700 focus:ring-red-700',
+		success: 'bg-green-700 text-white hover:bg-green-600 focus:ring-green-600',
+		warning: 'bg-amber-600 text-white hover:bg-amber-500 focus:ring-amber-500',
 	}[variant];
 
 	const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';

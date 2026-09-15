@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 export const db = new Dexie('HabitTrackerDB');
 
@@ -8,120 +9,108 @@ db.version(2).stores({
 		'++id, userId, name, frequency, startDate, endDate, lastDone, streak, timesPerPeriod, customInterval, weeklyCompletions, completedDates, isPaused',
 });
 
-// Helper to get start of week (Monday)
-export function getStartOfWeek(date) {
-	// Create a new date object and set to midnight
-	const d = new Date(date);
-	d.setHours(0, 0, 0, 0);
+// v3 reshapes habits around a schedule rather than a frequency label:
+//   - completedDates + weeklyCompletions collapse into one `completions` array
+//     of 'YYYY-MM-DD' local date keys. Storing keys instead of Date objects is
+//     what removes the local-vs-UTC midnight mismatches for good.
+//   - daysOfWeek / durationMinutes / timeOfDay describe when a habit happens,
+//     which is what both fixed-day habits and calendar export need.
+//   - isPaused becomes pausedRanges, so a pause can be told apart from a miss
+//     when streaks are recalculated over history.
+//   - streak and completedDays are dropped; both are derived now.
+export async function applyV3Upgrade(tx) {
+	const today = getLocalDateKey(new Date());
 
-	// Get the day of week (0 = Sunday, 1 = Monday, etc.)
-	const day = d.getDay();
-
-	// Calculate days to subtract to get to Monday
-	// If Sunday (0), subtract 6 days to get to last Monday
-	// Otherwise, subtract (day - 1) days to get to this week's Monday
-	const daysToSubtract = day === 0 ? 6 : day - 1;
-
-	// Set to Monday
-	d.setDate(d.getDate() - daysToSubtract);
-
-	return d;
-}
-
-// Get completions for current week
-export function getWeeklyCompletions(habit, date) {
-	const weekStart = getStartOfWeek(date);
-	const weekEnd = new Date(weekStart);
-	weekEnd.setDate(weekEnd.getDate() + 7);
-
-	return (habit.weeklyCompletions || []).filter(completion => {
-		const completionDate = new Date(completion);
-		// Set both dates to midnight UTC for consistent comparison
-		completionDate.setUTCHours(0, 0, 0, 0);
-		const startUTC = new Date(weekStart);
-		startUTC.setUTCHours(0, 0, 0, 0);
-		const endUTC = new Date(weekEnd);
-		endUTC.setUTCHours(0, 0, 0, 0);
-
-		return completionDate >= startUTC && completionDate < endUTC;
-	});
-}
-
-// Check if a habit should be shown today
-export function shouldShowHabitToday(habit, date, referenceDate = new Date()) {
-	if (habit.frequency !== 'weekly' || !habit.timesPerPeriod) {
-		return true;
-	}
-
-	// Set both dates to midnight UTC for consistent comparison
-	const today = new Date(referenceDate);
-	today.setUTCHours(0, 0, 0, 0);
-	const checkDate = new Date(date);
-	checkDate.setUTCHours(0, 0, 0, 0);
-	const isPast = checkDate < today;
-
-	const completions = habit.weeklyCompletions || [];
-	const completedToday = completions.some(d => {
-		const completionDate = new Date(d);
-		completionDate.setUTCHours(0, 0, 0, 0);
-		return completionDate.getTime() === checkDate.getTime();
-	});
-
-	// Get completions for the week of 'date'
-	const weekCompletions = getWeeklyCompletions(habit, date);
-	const completionsThisWeek = weekCompletions.length;
-
-	if (isPast) {
-		// For past days, show only if completed that day
-		return completedToday;
-	} else {
-		// For today/future, show if:
-		// 1. Weekly target not yet met, OR
-		// 2. This specific day was completed
-		return completionsThisWeek < habit.timesPerPeriod || completedToday;
-	}
-}
-
-// Update habit completion (works for both daily and weekly)
-export async function toggleHabitCompletion(habit, date) {
-	const today = new Date(date);
-	today.setHours(0, 0, 0, 0);
-
-	// Use completedDates for daily, weeklyCompletions for weekly
-	const isWeekly = habit.frequency === 'weekly' && habit.timesPerPeriod;
-	const completionsKey = isWeekly ? 'weeklyCompletions' : 'completedDates';
-	const completions = (habit[completionsKey] || []).map(d => new Date(d));
-	const todayTime = today.getTime();
-	const isCompleted = completions.some(d => d.getTime() === todayTime);
-
-	if (isCompleted) {
-		// Uncomplete: remove only this date
-		const newCompletions = (habit[completionsKey] || []).filter(
-			d => new Date(d).getTime() !== todayTime
+	// Keep a verbatim copy of the pre-migration rows. The upgrade drops fields,
+	// and Dexie runs it automatically on first load after deploy — this is the
+	// only way back if the transform gets something wrong.
+	try {
+		const before = await tx.table('habits').toArray();
+		localStorage.setItem(
+			'habitBackup:v2',
+			JSON.stringify({ savedAt: new Date().toISOString(), habits: before })
 		);
-		await db.habits.update(habit.id, {
-			[completionsKey]: newCompletions,
-			lastDone:
-				newCompletions.length > 0
-					? new Date(Math.max(...newCompletions.map(d => new Date(d).getTime())))
-					: null,
-			streak: Math.max(0, habit.streak - 1),
-		});
-	} else {
-		// Complete: add this date if not present
-		const newCompletions = [...(habit[completionsKey] || []), today];
-		await db.habits.update(habit.id, {
-			[completionsKey]: newCompletions,
-			lastDone: today,
-			streak: habit.streak + 1,
-		});
+	} catch (error) {
+		console.error('Could not back up habits before migrating:', error);
 	}
+
+	await tx
+		.table('habits')
+		.toCollection()
+		.modify(habit => {
+			const merged = [
+				...(habit.completedDates || []),
+				...(habit.weeklyCompletions || []),
+			].map(getLocalDateKey);
+
+			habit.completions = [...new Set(merged)].sort();
+
+			// monthly and every_n_days were never implemented, and 'weekly' with
+			// no target was treated as daily too — all of them showed up every
+			// day, so daily preserves the observed behaviour.
+			if (habit.frequency !== 'weekly' || !habit.timesPerPeriod) {
+				habit.frequency = 'daily';
+				habit.timesPerPeriod = null;
+			}
+
+			habit.daysOfWeek = habit.daysOfWeek || null;
+			habit.durationMinutes = habit.durationMinutes || null;
+			habit.timeOfDay = habit.timeOfDay || null;
+			habit.pausedRanges = habit.isPaused ? [{ from: today, to: null }] : [];
+			// Pre-v3 there was only endDate, with no record of why it ended.
+			habit.endReason = habit.endDate ? 'completed' : null;
+
+			delete habit.completedDates;
+			delete habit.weeklyCompletions;
+			delete habit.isPaused;
+			delete habit.customInterval;
+			delete habit.streak;
+			delete habit.completedDays;
+			delete habit.lastDone;
+		});
+}
+
+db.version(3)
+	.stores({
+		users: '++id, name, createdAt, settings',
+		habits: '++id, userId, name, frequency, startDate, endDate, timesPerPeriod',
+	})
+	.upgrade(applyV3Upgrade);
+
+// Toggle a habit's completion for one day. Completions are local date keys, so
+// there is no time component to get wrong. Streaks are derived from this array
+// rather than tracked alongside it — see services/streaks.js.
+export async function toggleHabitCompletion(habit, date) {
+	const key = getLocalDateKey(date);
+
+	// Re-read inside a transaction: the habit passed in came from a cache that
+	// another view may already have moved on from.
+	await db.transaction('rw', db.habits, async () => {
+		const current = await db.habits.get(habit.id);
+		if (!current) return;
+
+		const completions = current.completions || [];
+		const next = completions.includes(key)
+			? completions.filter(d => d !== key)
+			: [...completions, key].sort();
+
+		await db.habits.update(habit.id, { completions: next });
+	});
 }
 
 // Helper function to ensure dates are stored as Date objects
 export function ensureDateObject(date) {
 	if (!date) return null;
 	if (date instanceof Date) return date;
+
+	// A bare 'YYYY-MM-DD' (what a date input gives us) is parsed as UTC
+	// midnight by the Date constructor, which is the previous day west of UTC.
+	// Read it as the calendar date the user picked.
+	if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+		const [year, month, day] = date.split('-').map(Number);
+		return new Date(year, month - 1, day);
+	}
+
 	return new Date(date);
 }
 
@@ -138,6 +127,7 @@ export function normalizeDate(date) {
 export async function dbClear() {
 	await db.habits.clear();
 	await db.users.clear();
+	localStorage.removeItem('currentUserId');
 	console.log('🧹 Database cleared');
 }
 
@@ -157,6 +147,9 @@ export async function dbFreshSeed() {
 		},
 	});
 
+	const todayKey = getLocalDateKey(today);
+	const yesterdayKey = getLocalDateKey(new Date(today.getTime() - 24 * 60 * 60 * 1000));
+
 	const sampleHabits = [
 		{
 			userId,
@@ -164,8 +157,11 @@ export async function dbFreshSeed() {
 			frequency: 'daily',
 			startDate: today,
 			details: '10 minutes of mindfulness',
-			streak: 3,
-			completedDates: [today],
+			completions: [todayKey],
+			daysOfWeek: null,
+			durationMinutes: 10,
+			timeOfDay: '07:00',
+			pausedRanges: [],
 		},
 		{
 			userId,
@@ -174,23 +170,31 @@ export async function dbFreshSeed() {
 			timesPerPeriod: 3,
 			startDate: today,
 			details: '30 minutes of cardio or strength training',
-			streak: 2,
-			weeklyCompletions: [
-				new Date(today.getTime() - 24 * 60 * 60 * 1000), // yesterday
-			],
+			completions: [yesterdayKey],
+			daysOfWeek: null,
+			durationMinutes: 30,
+			timeOfDay: null,
+			pausedRanges: [],
 		},
 		{
 			userId,
-			name: 'Read',
-			frequency: 'daily',
+			name: 'Write for video game project',
+			frequency: 'specificDays',
+			daysOfWeek: [6, 0],
 			startDate: today,
-			details: 'Read for 20 minutes',
-			streak: 5,
-			completedDates: [],
+			details: 'Weekend writing block',
+			completions: [],
+			durationMinutes: 30,
+			timeOfDay: '10:00',
+			pausedRanges: [],
 		},
 	];
 
 	await db.habits.bulkAdd(sampleHabits);
+
+	// Point the stored session at the profile we just made, otherwise the app
+	// reloads onto onboarding with a localStorage id that no longer resolves.
+	localStorage.setItem('currentUserId', String(userId));
 	console.log('🌱 Database reset with sample data');
 }
 

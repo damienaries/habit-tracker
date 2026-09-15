@@ -9,7 +9,11 @@ export default function TabNavigation() {
 		<nav className="w-full max-w-2xl fixed bottom-0 left-0 md:left-1/2 md:-translate-x-1/2 bg-white text-gray-900 flex justify-around items-center h-20">
 			<NavLink to="/" className={getClassName} end>
 				<Icon icon="home" color="#6B7280" size="md" />
-				<span className="text-xs mt-1">Home</span>
+				<span className="text-xs mt-1">Today</span>
+			</NavLink>
+			<NavLink to="/month" className={getClassName}>
+				<Icon icon="chevron-down" color="#6B7280" size="md" />
+				<span className="text-xs mt-1">Month</span>
 			</NavLink>
 			<NavLink to="/create" className={getClassName}>
 				<Icon icon="plus-circle" color="#6B7280" size="md" />
