@@ -1,5 +1,7 @@
 export default function ButtonComponent({
 	href,
+	target,
+	rel,
 	onClick,
 	size = 'base',
 	variant = 'primary',
@@ -47,7 +49,14 @@ export default function ButtonComponent({
 
 	if (href) {
 		return (
-			<a href={href} onClick={onClick} className={classes} aria-disabled={disabled}>
+			<a
+				href={href}
+				target={target}
+				rel={rel}
+				onClick={onClick}
+				className={classes}
+				aria-disabled={disabled}
+			>
 				{content}
 			</a>
 		);

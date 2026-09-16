@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Icon from './icons/Icon';
 import ButtonComponent from './elements/ButtonComponent';
@@ -7,9 +7,16 @@ import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
 import { getAllHabits } from '../services/habitService';
 import { buildCalendar } from '../services/icsExport';
-import { deliverCalendar } from '../services/calendarDelivery';
+import { calendarUrl } from '../services/calendarDelivery';
 import { formatBuild } from '../services/buildInfo';
 import { habitKeys } from '../queries/habitKeys';
+
+const SKIP_REASONS = {
+	'no-days': 'no days chosen, so there is nothing to schedule',
+	paused: 'paused',
+	finished: 'finished or quit',
+	'day-full': 'no room left in the day',
+};
 
 export default function Settings({ isOpen, onClose }) {
 	const { user, updateUserSettings, clearProfile } = useUser();
@@ -18,14 +25,28 @@ export default function Settings({ isOpen, onClose }) {
 		queryFn: () => getAllHabits(user.id),
 		enabled: !!user,
 	});
+
+	// Built up front so the button can be a real link. A programmatic
+	// window.open is treated as a popup and, in a standalone PWA, navigates the
+	// app away instead of handing the file to the OS.
+	const calendar = useMemo(() => {
+		if (habits.length === 0) return null;
+
+		const { ics, scheduled, skipped } = buildCalendar(habits);
+		return {
+			url: calendarUrl(ics, window.location.origin),
+			count: scheduled.length,
+			total: habits.length,
+			skipped,
+		};
+	}, [habits]);
+
 	const [settings, setSettings] = useState({
 		morningNotifications: user?.settings?.morningNotifications ?? true,
 		eveningNotifications: user?.settings?.eveningNotifications ?? true,
 	});
 	const [notificationPermission, setNotificationPermission] = useState('default');
 	const [isRegistering, setIsRegistering] = useState(false);
-	const [isExporting, setIsExporting] = useState(false);
-	const [exportNote, setExportNote] = useState(null);
 
 	useEffect(() => {
 		if ('Notification' in window) {
@@ -77,27 +98,6 @@ export default function Settings({ isOpen, onClose }) {
 			month: 'long',
 			day: 'numeric',
 		});
-	};
-
-	const handleExport = async () => {
-		setIsExporting(true);
-		try {
-			const { ics, scheduled, skipped } = buildCalendar(habits);
-			const outcome = deliverCalendar(ics);
-			const missing = skipped.filter(s => s.reason === 'no-days').length;
-			const skippedNote = missing > 0 ? ` ${missing} skipped — no days set.` : '';
-
-			setExportNote(
-				outcome === 'opened'
-					? `${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} sent to your calendar app.${skippedNote}`
-					: `${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} downloaded.${skippedNote}`
-			);
-		} catch (error) {
-			console.error('Calendar export failed:', error);
-			setExportNote('Could not build the calendar file.');
-		} finally {
-			setIsExporting(false);
-		}
 	};
 
 	const handleSwitchProfile = () => {
@@ -193,16 +193,48 @@ export default function Settings({ isOpen, onClose }) {
 						{/* Calendar */}
 						<div className="space-y-3">
 							<h3 className="text-lg font-medium text-gray-900">Calendar</h3>
-							<p className="text-sm text-gray-500">
-								Export habits that have days set as a recurring calendar file. Import it
-								into a calendar of its own to keep them colour-coded and easy to hide.
-							</p>
-							<ButtonComponent onClick={handleExport} variant="secondary" fullWidth>
-								{isExporting ? 'Preparing...' : 'Export to calendar'}
-							</ButtonComponent>
-							{exportNote && <p className="text-sm text-gray-600">{exportNote}</p>}
-						</div>
 
+							{calendar === null ? (
+								<p className="text-sm text-gray-500">No habits yet.</p>
+							) : (
+								<>
+									<p className="text-sm text-gray-500">
+										{calendar.count} of {calendar.total} habit
+										{calendar.total === 1 ? '' : 's'} can be added as recurring events.
+									</p>
+
+									{calendar.skipped.length > 0 && (
+										<ul className="text-xs text-gray-500 space-y-1">
+											{calendar.skipped.map(({ habit, reason }) => (
+												<li key={habit.id}>
+													<span className="text-gray-700">{habit.name}</span> —{' '}
+													{SKIP_REASONS[reason] || reason}
+												</li>
+											))}
+										</ul>
+									)}
+
+									{calendar.count > 0 && calendar.url && (
+										<ButtonComponent
+											href={calendar.url}
+											target="_blank"
+											rel="noopener"
+											variant="secondary"
+											fullWidth
+										>
+											Add to calendar
+										</ButtonComponent>
+									)}
+
+									{calendar.count > 0 && !calendar.url && (
+										<p className="text-sm text-amber-700">
+											Too many habits to send this way — we would need a different
+											export route.
+										</p>
+									)}
+								</>
+							)}
+						</div>
 
 						{/* Account Section */}
 						<div className="space-y-4">
