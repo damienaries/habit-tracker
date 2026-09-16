@@ -6,6 +6,8 @@ import ToggleButton from './elements/ToggleButton';
 import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
 import { getAllHabits } from '../services/habitService';
+import { buildCalendar } from '../services/icsExport';
+import { deliverCalendar } from '../services/calendarDelivery';
 import { habitKeys } from '../queries/habitKeys';
 
 export default function Settings({ isOpen, onClose }) {
@@ -21,6 +23,8 @@ export default function Settings({ isOpen, onClose }) {
 	});
 	const [notificationPermission, setNotificationPermission] = useState('default');
 	const [isRegistering, setIsRegistering] = useState(false);
+	const [isExporting, setIsExporting] = useState(false);
+	const [exportNote, setExportNote] = useState(null);
 
 	useEffect(() => {
 		if ('Notification' in window) {
@@ -72,6 +76,30 @@ export default function Settings({ isOpen, onClose }) {
 			month: 'long',
 			day: 'numeric',
 		});
+	};
+
+	const handleExport = async () => {
+		setIsExporting(true);
+		try {
+			const { ics, scheduled, skipped } = buildCalendar(habits);
+			const outcome = await deliverCalendar(ics);
+
+			if (outcome === 'cancelled') {
+				setExportNote(null);
+				return;
+			}
+
+			const missing = skipped.filter(s => s.reason === 'no-days').length;
+			setExportNote(
+				`${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} exported.` +
+					(missing > 0 ? ` ${missing} skipped — no days set.` : '')
+			);
+		} catch (error) {
+			console.error('Calendar export failed:', error);
+			setExportNote('Could not build the calendar file.');
+		} finally {
+			setIsExporting(false);
+		}
 	};
 
 	const handleSwitchProfile = () => {
@@ -163,6 +191,20 @@ export default function Settings({ isOpen, onClose }) {
 								/>
 							</div>
 						</div>
+
+						{/* Calendar */}
+						<div className="space-y-3">
+							<h3 className="text-lg font-medium text-gray-900">Calendar</h3>
+							<p className="text-sm text-gray-500">
+								Export habits that have days set as a recurring calendar file. Import it
+								into a calendar of its own to keep them colour-coded and easy to hide.
+							</p>
+							<ButtonComponent onClick={handleExport} variant="secondary" fullWidth>
+								{isExporting ? 'Preparing...' : 'Export to calendar'}
+							</ButtonComponent>
+							{exportNote && <p className="text-sm text-gray-600">{exportNote}</p>}
+						</div>
+
 
 						{/* Account Section */}
 						<div className="space-y-4">

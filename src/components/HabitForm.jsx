@@ -3,6 +3,14 @@ import { useCreateHabit } from '../hooks/useHabitMutations';
 import { FREQUENCY } from '../services/schedule';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const DAY_PRESETS = [
+	{ label: 'Every day', days: [0, 1, 2, 3, 4, 5, 6] },
+	{ label: 'Weekdays', days: [1, 2, 3, 4, 5] },
+	{ label: 'Weekends', days: [6, 0] },
+];
+
+const sameDays = (a, b) => a.length === b.length && [...a].sort().every((d, i) => d === [...b].sort()[i]);
 import ButtonComponent from './elements/ButtonComponent';
 import { normalizeDate } from '../db/habitDb';
 import { useUser } from '../contexts/UserContext';
@@ -14,7 +22,7 @@ export default function HabitForm({ onCreate }) {
 	const [frequency, setFrequency] = useState(FREQUENCY.DAILY);
 	const [daysOfWeek, setDaysOfWeek] = useState([]);
 	const [timesPerPeriod, setTimesPerPeriod] = useState('');
-	const [durationMinutes, setDurationMinutes] = useState('');
+	const [durationMinutes, setDurationMinutes] = useState('30');
 	const [timeOfDay, setTimeOfDay] = useState('');
 	const [details, setDetails] = useState('');
 	const [startDate, setStartDate] = useState(
@@ -67,7 +75,7 @@ export default function HabitForm({ onCreate }) {
 			setFrequency(FREQUENCY.DAILY);
 			setDaysOfWeek([]);
 			setTimesPerPeriod('');
-			setDurationMinutes('');
+			setDurationMinutes('30');
 			setTimeOfDay('');
 			setDetails('');
 			setStartDate(normalizeDate(new Date()).toISOString().split('T')[0]);
@@ -136,6 +144,22 @@ export default function HabitForm({ onCreate }) {
 			{frequency === FREQUENCY.SPECIFIC_DAYS && (
 				<div>
 					<span className="form-label">Which days? *</span>
+					<div className="flex flex-wrap gap-2 mt-1 mb-2">
+						{DAY_PRESETS.map(preset => (
+							<button
+								key={preset.label}
+								type="button"
+								onClick={() => setDaysOfWeek(preset.days)}
+								className={`px-3 py-1 rounded-full border text-xs transition-colors ${
+									sameDays(daysOfWeek, preset.days)
+										? 'bg-gray-800 text-white border-gray-800'
+										: 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+								}`}
+							>
+								{preset.label}
+							</button>
+						))}
+					</div>
 					<div className="flex flex-wrap gap-2 mt-1">
 						{DAY_NAMES.map((label, day) => (
 							<button

@@ -1,6 +1,7 @@
 import { db } from '../db/habitDb';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import { FREQUENCY, END_REASON } from './schedule';
+import { DEFAULT_DURATION_MINUTES } from './scheduler';
 
 // Create a new habit
 export async function createHabit({
@@ -11,7 +12,7 @@ export async function createHabit({
 	endDate = null,
 	daysOfWeek = null,
 	timesPerPeriod = null,
-	durationMinutes = null,
+	durationMinutes = DEFAULT_DURATION_MINUTES,
 	timeOfDay = null,
 	details = '',
 }) {
