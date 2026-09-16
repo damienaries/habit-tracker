@@ -3,9 +3,27 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import svgr from 'vite-plugin-svgr';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
+
+// Netlify exposes the commit it is building; fall back to local git, and to a
+// placeholder if neither is available so the build never fails over this.
+function buildRef() {
+	if (process.env.COMMIT_REF) return process.env.COMMIT_REF.slice(0, 7);
+	try {
+		return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+			.toString()
+			.trim();
+	} catch {
+		return 'unknown';
+	}
+}
 
 // https://vite.dev/config/
 export default defineConfig({
+	define: {
+		__BUILD_REF__: JSON.stringify(buildRef()),
+		__BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+	},
 	plugins: [
 		react(),
 		tailwindcss(),

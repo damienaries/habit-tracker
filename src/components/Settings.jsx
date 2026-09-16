@@ -8,6 +8,7 @@ import { NotificationService } from '../services/notificationService';
 import { getAllHabits } from '../services/habitService';
 import { buildCalendar } from '../services/icsExport';
 import { deliverCalendar } from '../services/calendarDelivery';
+import { formatBuild } from '../services/buildInfo';
 import { habitKeys } from '../queries/habitKeys';
 
 export default function Settings({ isOpen, onClose }) {
@@ -82,17 +83,14 @@ export default function Settings({ isOpen, onClose }) {
 		setIsExporting(true);
 		try {
 			const { ics, scheduled, skipped } = buildCalendar(habits);
-			const outcome = await deliverCalendar(ics);
-
-			if (outcome === 'cancelled') {
-				setExportNote(null);
-				return;
-			}
-
+			const outcome = deliverCalendar(ics);
 			const missing = skipped.filter(s => s.reason === 'no-days').length;
+			const skippedNote = missing > 0 ? ` ${missing} skipped — no days set.` : '';
+
 			setExportNote(
-				`${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} exported.` +
-					(missing > 0 ? ` ${missing} skipped — no days set.` : '')
+				outcome === 'opened'
+					? `${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} sent to your calendar app.${skippedNote}`
+					: `${scheduled.length} habit${scheduled.length === 1 ? '' : 's'} downloaded.${skippedNote}`
 			);
 		} catch (error) {
 			console.error('Calendar export failed:', error);
@@ -216,7 +214,8 @@ export default function Settings({ isOpen, onClose }) {
 					</div>
 
 					{/* Footer */}
-					<div className="p-4 border-t">
+					<div className="p-4 border-t space-y-3">
+						<p className="text-center text-xs text-gray-400">Build {formatBuild()}</p>
 						<ButtonComponent onClick={onClose} variant="primary" size="lg" fullWidth>
 							Done
 						</ButtonComponent>

@@ -12,7 +12,7 @@ export default [
 		files: ['**/*.{js,jsx}'],
 		languageOptions: {
 			ecmaVersion: 2020,
-			globals: globals.browser,
+			globals: { ...globals.browser, __BUILD_REF__: 'readonly', __BUILD_TIME__: 'readonly' },
 			parserOptions: {
 				ecmaVersion: 'latest',
 				ecmaFeatures: { jsx: true },
@@ -35,6 +35,16 @@ export default [
 		languageOptions: {
 			globals: globals.serviceworker,
 		},
+	},
+	{
+		// Tests run under Node, so Buffer and friends are available.
+		files: ['**/*.test.{js,jsx}'],
+		languageOptions: { globals: { ...globals.browser, ...globals.node } },
+	},
+	{
+		// Config files run in Node, not the browser.
+		files: ['vite.config.js', 'vitest.config.js', 'eslint.config.js', 'postcss.config.js'],
+		languageOptions: { globals: globals.node },
 	},
 	{
 		files: ['netlify/functions/**/*.js'],
