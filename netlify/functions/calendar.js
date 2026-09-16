@@ -58,7 +58,11 @@ exports.handler = async event => {
 		headers: {
 			...headers,
 			'Content-Type': 'text/calendar; charset=utf-8',
-			'Content-Disposition': 'inline; filename="habits.ics"',
+			// 'attachment', not 'inline': a browser cannot render text/calendar,
+			// so inline just yields a blank tab. As an attachment it is saved
+			// with the filename this header specifies — which is also what
+			// fixes iOS, where a locally-built file loses its .ics extension.
+			'Content-Disposition': 'attachment; filename="habits.ics"',
 			'Cache-Control': 'no-store',
 		},
 		body: ics,
