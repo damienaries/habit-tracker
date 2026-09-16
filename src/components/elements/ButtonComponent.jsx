@@ -2,6 +2,7 @@ export default function ButtonComponent({
 	href,
 	target,
 	rel,
+	download,
 	onClick,
 	size = 'base',
 	variant = 'primary',
@@ -53,6 +54,7 @@ export default function ButtonComponent({
 				href={href}
 				target={target}
 				rel={rel}
+				download={download}
 				onClick={onClick}
 				className={classes}
 				aria-disabled={disabled}

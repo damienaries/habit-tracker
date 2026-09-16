@@ -217,8 +217,7 @@ export default function Settings({ isOpen, onClose }) {
 									{calendar.count > 0 && calendar.url && (
 										<ButtonComponent
 											href={calendar.url}
-											target="_blank"
-											rel="noopener"
+											download="habits.ics"
 											variant="secondary"
 											fullWidth
 										>
