@@ -7,7 +7,7 @@ import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
 import { getAllHabits } from '../services/habitService';
 import { buildCalendar } from '../services/icsExport';
-import { calendarUrl } from '../services/calendarDelivery';
+import { calendarUrl, webcalUrl } from '../services/calendarDelivery';
 import { formatBuild } from '../services/buildInfo';
 import { habitKeys } from '../queries/habitKeys';
 
@@ -34,7 +34,8 @@ export default function Settings({ isOpen, onClose }) {
 
 		const { ics, scheduled, skipped } = buildCalendar(habits);
 		return {
-			url: calendarUrl(ics, window.location.origin),
+			url: webcalUrl(ics, window.location.origin),
+			downloadUrl: calendarUrl(ics, window.location.origin),
 			count: scheduled.length,
 			total: habits.length,
 			skipped,
@@ -215,14 +216,21 @@ export default function Settings({ isOpen, onClose }) {
 									)}
 
 									{calendar.count > 0 && calendar.url && (
-										<ButtonComponent
-											href={calendar.url}
-											download="habits.ics"
-											variant="secondary"
-											fullWidth
-										>
-											Add to calendar
-										</ButtonComponent>
+										<>
+											<ButtonComponent href={calendar.url} variant="secondary" fullWidth>
+												Add to calendar
+											</ButtonComponent>
+											<p className="text-xs text-gray-400 text-center">
+												Opens your calendar app.{' '}
+												<a
+													href={calendar.downloadUrl}
+													download="habits.ics"
+													className="underline"
+												>
+													Download the file instead
+												</a>
+											</p>
+										</>
 									)}
 
 									{calendar.count > 0 && !calendar.url && (

@@ -65,3 +65,27 @@ describe('calendarUrl', () => {
 		expect(calendarUrl(ics)).not.toBeNull();
 	});
 });
+
+describe('webcalUrl', () => {
+	it('swaps the scheme so iOS hands it to Calendar', async () => {
+		const { webcalUrl } = await import('./calendarDelivery');
+		const url = webcalUrl(MINIMAL, 'https://habit-harbor.netlify.app');
+
+		expect(url.startsWith('webcal://habit-harbor.netlify.app')).toBe(true);
+		expect(url).toContain(`${CALENDAR_ENDPOINT}?c=`);
+	});
+
+	it('keeps the encoded payload identical to the https form', async () => {
+		const { webcalUrl } = await import('./calendarDelivery');
+		const https = calendarUrl(MINIMAL, 'https://example.app');
+		const webcal = webcalUrl(MINIMAL, 'https://example.app');
+
+		expect(webcal.split('?c=')[1]).toBe(https.split('?c=')[1]);
+	});
+
+	it('returns null when the calendar is too big', async () => {
+		const { webcalUrl } = await import('./calendarDelivery');
+		const huge = 'BEGIN:VCALENDAR\r\nX-PAD:' + 'a'.repeat(10000) + '\r\nEND:VCALENDAR\r\n';
+		expect(webcalUrl(huge, 'https://example.app')).toBeNull();
+	});
+});
