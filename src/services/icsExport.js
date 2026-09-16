@@ -100,7 +100,7 @@ function buildEvent(entry, options) {
 		`UID:habit-${habit.id}@habit-tracker`,
 		`DTSTAMP:${stamp(options.now)}`,
 		`DTSTART:${floating(getLocalDateKey(firstDay), start)}`,
-		`DURATION:PT${duration}M`,
+		`DTEND:${floating(getLocalDateKey(firstDay), start + duration)}`,
 		`SUMMARY:${escapeText(habit.name)}`,
 		`CATEGORIES:${escapeText(CALENDAR_NAME)}`,
 	];
@@ -125,7 +125,9 @@ function buildEvent(entry, options) {
 		lines.push(
 			'BEGIN:VALARM',
 			'ACTION:DISPLAY',
-			`TRIGGER:-PT${options.reminderMinutes}M`,
+			options.reminderMinutes === 0
+				? 'TRIGGER;RELATED=START:PT0S'
+				: `TRIGGER;RELATED=START:-PT${options.reminderMinutes}M`,
 			`DESCRIPTION:${escapeText(habit.name)}`,
 			'END:VALARM'
 		);
@@ -151,7 +153,6 @@ export function buildCalendar(habits, options = {}) {
 		'VERSION:2.0',
 		'PRODID:-//Habit Tracker//EN',
 		'CALSCALE:GREGORIAN',
-		'METHOD:PUBLISH',
 		`X-WR-CALNAME:${escapeText(CALENDAR_NAME)}`,
 		`X-APPLE-CALENDAR-COLOR:${CALENDAR_COLOR}`,
 	];

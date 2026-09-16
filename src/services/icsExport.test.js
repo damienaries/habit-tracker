@@ -88,9 +88,9 @@ describe('events', () => {
 		expect(ics).not.toContain('SUMMARY:done');
 	});
 
-	it('carries the duration the scheduler assigned', () => {
+	it('ends the block after the assigned duration', () => {
 		const { ics } = build([habit('meditate', { timeOfDay: '07:00', durationMinutes: 10 })]);
-		expect(eventFor(ics, 'meditate')).toContain('DURATION:PT10M');
+		expect(eventFor(ics, 'meditate')).toContain('DTEND:20240603T071000');
 	});
 
 	it('excludes days inside a closed pause range', () => {
@@ -105,7 +105,7 @@ describe('events', () => {
 
 	it('adds a reminder at the start of the block', () => {
 		const { ics } = build([habit('read')]);
-		expect(eventFor(ics, 'read')).toContain('TRIGGER:-PT0M');
+		expect(eventFor(ics, 'read')).toContain('TRIGGER;RELATED=START:PT0S');
 	});
 
 	it('can leave reminders out', () => {
@@ -150,3 +150,49 @@ describe('what stays out', () => {
 		expect(ics).not.toContain('SUMMARY:resting');
 	});
 });
+
+describe('strict structural validity', () => {
+	it('opens and closes every component in order', () => {
+		const { ics } = build([
+			habit('a', { timeOfDay: '07:00' }),
+			habit('b', { pausedRanges: [{ from: '2024-06-05', to: '2024-06-06' }] }),
+		]);
+
+		const stack = [];
+		for (const line of ics.split('\r\n')) {
+			if (line.startsWith('BEGIN:')) stack.push(line.slice(6));
+			if (line.startsWith('END:')) expect(stack.pop()).toBe(line.slice(4));
+		}
+		expect(stack).toHaveLength(0);
+	});
+
+	it('gives every event the properties the spec requires', () => {
+		const { ics } = build([habit('read')]);
+		const event = eventFor(ics, 'read');
+
+		for (const required of ['UID:', 'DTSTAMP:', 'DTSTART:']) {
+			expect(event).toContain(required);
+		}
+	});
+
+	it('does not emit a negative zero duration', () => {
+		const { ics } = build([habit('read')]);
+		expect(ics).not.toContain('-PT0M');
+	});
+
+	it('leaves out METHOD so the file reads as a plain calendar', () => {
+		const { ics } = build([habit('read')]);
+		expect(ics).not.toContain('METHOD:');
+	});
+
+	it('every line is a property or a component marker', () => {
+		const { ics } = build([habit('read', { details: 'x'.repeat(200) })]);
+
+		for (const line of ics.split('\r\n')) {
+			if (line === '') continue;
+			// Folded continuations begin with a space; everything else must be NAME:VALUE
+			if (line.startsWith(' ')) continue;
+			expect(line).toMatch(/^[A-Z][A-Z0-9-]*[;:]/);
+		}
+	});
+})
