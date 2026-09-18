@@ -19,9 +19,16 @@ export default function DayHabits({ date, editable = false, emptyMessage = 'Noth
 		enabled: !!user,
 	});
 
-	if (isLoading) return <p className="text-sm text-gray-400">Loading...</p>;
-	if (error) return <p className="text-sm text-red-600">Error loading habits.</p>;
-	if (!habits?.length) return <p className="text-sm text-gray-400">{emptyMessage}</p>;
+	if (isLoading) return <div className="space-y-2" aria-busy="true">{[0, 1, 2].map(i => (<div key={i} className="h-[72px] rounded-[var(--radius)] bg-[var(--c-surface-sunk)] animate-pulse" />))}</div>;
+	if (error) return <p className="text-sm text-[var(--c-danger)]">Could not load your habits. Pull down to try again.</p>;
+	if (!habits?.length) {
+		return (
+			<div className="text-center py-10 px-6">
+				<p className="text-display-sm text-[1.05rem] text-[var(--c-text-soft)]">{emptyMessage}</p>
+				<p className="text-sm text-[var(--c-muted)] mt-1">Nothing to tick off — enjoy it.</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-2">

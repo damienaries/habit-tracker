@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { formatDateTitle, generateDateOffset } from '../utils/dateHelpers';
 import { useToday } from '../hooks/useToday';
 import DayHabits from '../components/DayHabits';
+import TodoList from '../components/TodoList';
+import UpcomingDays from '../components/UpcomingDays';
 import DaySheet from '../components/DaySheet';
-import ButtonComponent from '../components/elements/ButtonComponent';
 
 export default function Today() {
 	const today = useToday();
@@ -11,16 +12,24 @@ export default function Today() {
 	const [openDate, setOpenDate] = useState(null);
 
 	return (
-		<div className="p-4 max-w-screen-sm mx-auto">
-			<h1 className="text-xl font-semibold mb-1">{formatDateTitle(today)}</h1>
-			<p className="text-sm text-gray-500 mb-4">Today</p>
+		<div className="px-4 py-5">
+			<h1 className="text-display text-[1.9rem] mb-5">{formatDateTitle(today)}</h1>
+
+			{/* One-off items first: they are the things you will forget. */}
+			<TodoList date={today} />
 
 			<DayHabits date={today} emptyMessage="Nothing scheduled today." />
 
-			<div className="mt-8 pt-4 border-t border-gray-200">
-				<ButtonComponent onClick={() => setOpenDate(yesterday)} variant="secondary" size="sm">
+			<UpcomingDays today={today} onOpenDate={setOpenDate} />
+
+			<div className="mt-8 flex justify-center">
+				<button
+					type="button"
+					onClick={() => setOpenDate(yesterday)}
+					className="text-sm text-[var(--c-muted)] underline underline-offset-4 decoration-[var(--c-border-strong)] py-2 px-3"
+				>
 					Forgot something yesterday?
-				</ButtonComponent>
+				</button>
 			</div>
 
 			<DaySheet date={openDate} onClose={() => setOpenDate(null)} />

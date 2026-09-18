@@ -98,7 +98,7 @@ export default function Onboarding() {
 			<div className="mt-8 space-y-4">
 				<button
 					onClick={() => setShowInstructions(!showInstructions)}
-					className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+					className="w-full flex items-center justify-between p-4 bg-[var(--c-surface-sunk)] rounded-lg hover:bg-[var(--c-surface-sunk)] transition-colors"
 				>
 					<div className="flex items-center gap-2">
 						<Icon icon="download" size="md" />
@@ -117,8 +117,8 @@ export default function Onboarding() {
 					}`}
 				>
 					<div className="overflow-hidden">
-						<div className="p-4 bg-gray-50 rounded-lg">
-							<ol className="list-decimal list-inside space-y-2 text-gray-600">
+						<div className="p-4 bg-[var(--c-surface-sunk)] rounded-lg">
+							<ol className="list-decimal list-inside space-y-2 text-[var(--c-text-soft)]">
 								{currentInstructions.steps.map((step, index) => (
 									<li key={index}>{step}</li>
 								))}
@@ -131,12 +131,12 @@ export default function Onboarding() {
 	};
 
 	return (
-		<div className="fixed inset-0 bg-white z-50 flex flex-col">
+		<div className="fixed inset-0 bg-[var(--c-surface)] z-50 flex flex-col">
 			<div className="flex-1 flex items-center justify-center p-4">
 				<div className="w-full max-w-md space-y-8">
 					<div className="text-center">
 						<h1 className="text-2xl font-bold">Welcome to Habit Tracker</h1>
-						<p className="mt-2 text-gray-600">
+						<p className="mt-2 text-[var(--c-text-soft)]">
 							{user
 								? 'Manage your profile or install the app'
 								: "Let's get started by setting up your profile"}
@@ -146,7 +146,7 @@ export default function Onboarding() {
 					{user ? (
 						<div className="space-y-6">
 							<div className="text-center">
-								<p className="text-gray-600">
+								<p className="text-[var(--c-text-soft)]">
 									Currently logged in as: <span className="font-medium">{user.name}</span>
 								</p>
 							</div>
@@ -161,7 +161,7 @@ export default function Onboarding() {
 						<div className="space-y-6">
 							<form onSubmit={handleSubmit} className="space-y-6">
 								<div>
-									<label htmlFor="name" className="block text-sm font-medium text-gray-700">
+									<label htmlFor="name" className="block text-sm font-medium text-[var(--c-text-soft)]">
 										What should we call you?
 									</label>
 									<input
@@ -170,7 +170,7 @@ export default function Onboarding() {
 										value={name}
 										onChange={e => setName(e.target.value)}
 										placeholder="Enter your name"
-										className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+										className="mt-1 block w-full rounded-md border border-[var(--c-border-strong)] px-3 py-2 shadow-sm focus:border-[var(--c-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent-soft)]"
 										required
 									/>
 								</div>
@@ -182,10 +182,10 @@ export default function Onboarding() {
 
 							<div className="relative">
 								<div className="absolute inset-0 flex items-center">
-									<div className="w-full border-t border-gray-300"></div>
+									<div className="w-full border-t border-[var(--c-border-strong)]"></div>
 								</div>
 								<div className="relative flex justify-center text-sm">
-									<span className="px-2 bg-white text-gray-500">or</span>
+									<span className="px-2 bg-[var(--c-surface)] text-[var(--c-muted)]">or</span>
 								</div>
 							</div>
 
@@ -200,15 +200,15 @@ export default function Onboarding() {
 							{showExistingUsers && (
 								<div className="mt-4 space-y-2">
 									{existingUsers.length === 0 ? (
-										<p className="text-center text-gray-500">No existing users found</p>
+										<p className="text-center text-[var(--c-muted)]">No existing users found</p>
 									) : (
 										existingUsers.map(existingUser => (
 											<button
 												key={existingUser.id}
 												onClick={() => handleExistingProfile(existingUser)}
-												className="w-full p-3 text-left rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3"
+												className="w-full p-3 text-left rounded-lg hover:bg-[var(--c-surface-sunk)] transition-colors flex items-center gap-3"
 											>
-												<div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold text-lg">
+												<div className="w-8 h-8 rounded-full bg-[var(--c-text)] text-white flex items-center justify-center font-bold text-lg">
 													{existingUser.name[0].toUpperCase()}
 												</div>
 												<span className="font-medium">{existingUser.name}</span>

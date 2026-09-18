@@ -1,0 +1,68 @@
+/* ---------------------------------------------------------------------------
+   Sunset. Coral and tangerine over peach, plum standing in for black, teal
+   marking completion. Declared once here; nothing downstream should reach for
+   a raw hex value.
+   --------------------------------------------------------------------------- */
+:root {
+	--c-bg: #fff6f0;
+	--c-surface: #ffffff;
+	--c-surface-sunk: #fdefe7;
+	--c-border: #f2ded1;
+	--c-border-strong: #e4c9b8;
+
+	--c-text: #3a1b4e;
+	--c-text-soft: #6b4a77;
+	--c-muted: #8a6e8e;
+
+	--c-accent: #ff5a5f;
+	--c-accent-soft: #ffe6e4;
+	--c-accent-ink: #c73c40;
+
+	--c-done: #179e93;
+	--c-done-soft: #d9f2ef;
+	--c-warn: #ff9f1c;
+	--c-warn-soft: #ffeed6;
+	--c-danger: #c2334a;
+	--c-danger-soft: #fbe2e6;
+	--c-idle: #f7e5d9;
+
+	/* Per-habit hues. Assigned round-robin until habits can carry their own. */
+	--h-1: #ff5a5f;
+	--h-2: #179e93;
+	--h-3: #ff9f1c;
+	--h-4: #7b2cbf;
+	--h-5: #2d7dd2;
+
+	/* Fraunces with SOFT and WONK turned up: ball terminals and canted forms
+	   that read hand-cut rather than editorial. Archivo keeps the interface
+	   grounded so the display face can misbehave. */
+	--font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+	--font-body: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--display-settings: 'opsz' 96, 'SOFT' 90, 'WONK' 1;
+	--display-settings-sm: 'opsz' 30, 'SOFT' 90, 'WONK' 1;
+
+	--dur-quick: 140ms;
+	--dur-base: 220ms;
+	--dur-slow: 320ms;
+	--ease-out: cubic-bezier(0.2, 0, 0, 1);
+	--ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.35);
+
+	--radius-sm: 8px;
+	--radius: 14px;
+	--radius-lg: 22px;
+
+	/* Home indicator and notch. Zero on anything that has neither. */
+	--safe-top: env(safe-area-inset-top, 0px);
+	--safe-bottom: env(safe-area-inset-bottom, 0px);
+
+	--header-h: 60px;
+	--tabbar-h: 64px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--dur-quick: 1ms;
+		--dur-base: 1ms;
+		--dur-slow: 1ms;
+	}
+}

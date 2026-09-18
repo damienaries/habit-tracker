@@ -30,29 +30,27 @@ export default defineConfig({
 		svgr(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			includeAssets: ['icons/fire.svg'],
+			includeAssets: ['icons/fire.svg', 'icons/app-icon-180.png'],
 			manifest: {
 				name: 'Habit Tracker',
 				short_name: 'Habits',
 				description: 'Track your daily and weekly habits with ease',
-				theme_color: '#000000',
-				background_color: '#ffffff',
+				theme_color: '#fff6f0',
+				background_color: '#fff6f0',
 				display: 'standalone',
 				display_override: ['window-controls-overlay'],
 				start_url: '/',
 				scope: '/',
 				icons: [
+					{ src: 'icons/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+					{ src: 'icons/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
 					{
-						src: 'icons/fire.svg',
-						sizes: '192x192',
-						type: 'image/svg+xml',
-						purpose: 'any maskable',
-					},
-					{
-						src: 'icons/fire.svg',
+						src: 'icons/app-icon-maskable-512.png',
 						sizes: '512x512',
-						type: 'image/svg+xml',
-						purpose: 'any maskable',
+						type: 'image/png',
+						// Separate art with a safe zone — Android crops maskable icons to
+						// a circle, and SVGs were being rejected outright.
+						purpose: 'maskable',
 					},
 				],
 			},

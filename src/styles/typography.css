@@ -1,49 +1,91 @@
-/* Base styles */
-h1 {
-	@apply font-bold text-2xl lg:text-3xl leading-4;
+/* Display face: used for dates, month names and streak numerals only. Fraunces
+   at these settings is characterful at size and muddy below ~18px, so it never
+   runs interface text. */
+.text-display {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-variation-settings: var(--display-settings);
+	letter-spacing: -0.015em;
+	line-height: 1.05;
 }
-.text-body {
-	@apply text-base leading-relaxed text-gray-800;
+
+.text-display-sm {
+	font-family: var(--font-display);
+	font-weight: 600;
+	font-variation-settings: var(--display-settings-sm);
+	letter-spacing: -0.01em;
+}
+
+h1 {
+	font-size: 1.6rem;
+}
+
+.text-eyebrow {
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--c-muted);
 }
 
 .text-body-muted {
-	@apply text-sm text-gray-500;
+	font-size: 0.85rem;
+	color: var(--c-muted);
 }
 
-.text-title {
-	@apply text-2xl font-bold text-gray-900;
+.numerals {
+	font-variant-numeric: tabular-nums;
 }
 
-.text-subtitle {
-	@apply text-lg font-semibold text-gray-700;
-}
-
-.text-hint {
-	@apply text-sm text-gray-400 italic;
-}
-
-/* === Link Style === */
-.link {
-	@apply text-blue-600 font-medium underline underline-offset-2 transition-colors duration-150;
-}
-
-.link:hover {
-	@apply text-blue-800;
-}
-
+/* === Nav tabs === */
 .link-nav-tabs {
-	@apply h-20 flex-1 text-lg flex flex-col items-center justify-center text-gray-900 transition-colors duration-150 bg-gray-50 hover:bg-gray-200;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 3px;
+	min-height: 52px;
+	font-size: 0.68rem;
+	font-weight: 500;
+	color: var(--c-muted);
+	transition: color var(--dur-quick) var(--ease-out);
 }
 
 .link-nav-tabs.current {
-	@apply text-black bg-gray-100;
+	color: var(--c-accent);
 }
 
-/* Form fields */
+/* === Forms === */
 .form-label {
-	@apply text-sm font-medium text-gray-700 mb-2 w-full;
+	display: block;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: var(--c-text-soft);
+	margin-bottom: 0.4rem;
 }
 
 .form-input {
-	@apply block w-full rounded-md border-gray-100 shadow-sm focus:border-blue-800 focus:ring focus:ring-blue-800 p-2;
+	display: block;
+	width: 100%;
+	padding: 0.7rem 0.8rem;
+	font: inherit;
+	color: var(--c-text);
+	background: var(--c-surface);
+	border: 1px solid var(--c-border);
+	border-radius: var(--radius-sm);
+	transition: border-color var(--dur-quick) var(--ease-out);
+}
+
+.form-input:focus {
+	outline: none;
+	border-color: var(--c-accent);
+	box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+/* === Surfaces === */
+.card {
+	background: var(--c-surface);
+	border: 1px solid var(--c-border);
+	border-radius: var(--radius);
 }

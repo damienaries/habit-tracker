@@ -5,15 +5,14 @@ import Today from './pages/Today';
 import MonthView from './pages/MonthView';
 import CreateHabitView from './pages/CreateHabitView';
 import AllHabitsView from './pages/AllHabitsView';
-import { UserProvider } from './contexts/UserContext';
-import { useUser } from './contexts/UserContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import Onboarding from './components/Onboarding';
 
 const routes = [
-	{ path: '/', element: <Today />, title: 'Today' },
-	{ path: '/month', element: <MonthView />, title: 'Month' },
-	{ path: '/create', element: <CreateHabitView />, title: 'Create Habit' },
-	{ path: '/habits', element: <AllHabitsView />, title: 'All Habits' },
+	{ path: '/', element: <Today /> },
+	{ path: '/month', element: <MonthView /> },
+	{ path: '/create', element: <CreateHabitView /> },
+	{ path: '/habits', element: <AllHabitsView /> },
 ];
 
 function AppContent() {
@@ -25,12 +24,18 @@ function AppContent() {
 
 	return (
 		<Router>
-			<div className="w-screen min-h-screen flex flex-col">
-				{/* Fixed header */}
-				<Header routes={routes} />
+			<div className="min-h-screen flex flex-col">
+				<Header />
 
-				{/* Centered container */}
-				<main className="flex-1 mx-auto w-full max-w-[800px] mt-16 mb-16">
+				{/* Header and tab bar are fixed, so the scrolling column clears both
+					    plus whatever the device reserves for the notch and home bar. */}
+				<main
+					className="flex-1 mx-auto w-full max-w-[520px]"
+					style={{
+						paddingTop: 'calc(var(--header-h) + var(--safe-top))',
+						paddingBottom: 'calc(var(--tabbar-h) + var(--safe-bottom) + 8px)',
+					}}
+				>
 					<Routes>
 						{routes.map(({ path, element }) => (
 							<Route key={path} path={path} element={element} />
@@ -38,7 +43,6 @@ function AppContent() {
 					</Routes>
 				</main>
 
-				{/* Bottom tab navigation */}
 				<TabNavigation />
 			</div>
 		</Router>

@@ -1,28 +1,61 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import Icon from './icons/Icon';
 
+const TABS = [
+	{ to: '/', icon: 'home', label: 'Today', end: true },
+	{ to: '/month', icon: null, label: null },
+	{ to: '/create', icon: 'plus-circle', label: 'Create' },
+	{ to: '/habits', icon: 'streak-up', label: 'Streaks' },
+];
+
 export default function TabNavigation() {
-	const getClassName = ({ isActive }) =>
-		`link-nav-tabs ${isActive ? 'current' : ''}`;
+	const location = useLocation();
+
+	const onCalendar = location.pathname === '/month';
+	const weekActive = onCalendar && new URLSearchParams(location.search).get('view') === 'week';
+
+	// The tab names the range you are in and flips when tapped again. Arriving
+	// from another tab lands on month; there is no hidden gesture to discover.
+	const calendar = {
+		to: weekActive ? '/month' : '/month?view=week',
+		icon: weekActive ? 'calendar-week' : 'calendar-month',
+		label: weekActive ? 'Week' : 'Month',
+	};
 
 	return (
-		<nav className="w-full max-w-2xl fixed bottom-0 left-0 md:left-1/2 md:-translate-x-1/2 bg-white text-gray-900 flex justify-around items-center h-20">
-			<NavLink to="/" className={getClassName} end>
-				<Icon icon="home" color="#6B7280" size="md" />
-				<span className="text-xs mt-1">Today</span>
-			</NavLink>
-			<NavLink to="/month" className={getClassName}>
-				<Icon icon="chevron-down" color="#6B7280" size="md" />
-				<span className="text-xs mt-1">Month</span>
-			</NavLink>
-			<NavLink to="/create" className={getClassName}>
-				<Icon icon="plus-circle" color="#6B7280" size="md" />
-				<span className="text-xs mt-1">Create</span>
-			</NavLink>
-			<NavLink to="/habits" className={getClassName}>
-				<Icon icon="list-bullet" color="#6B7280" size="md" />
-				<span className="text-xs mt-1">Streaks</span>
-			</NavLink>
+		<nav
+			className="fixed bottom-0 inset-x-0 z-20 bg-[var(--c-surface)] border-t border-[var(--c-border)]"
+			// Without this the labels sit under the home indicator in standalone mode.
+			style={{ paddingBottom: 'var(--safe-bottom)' }}
+		>
+			<div className="mx-auto max-w-[520px] h-[var(--tabbar-h)] flex">
+				{TABS.map(tab => {
+					const isCalendar = tab.to === '/month';
+					const to = isCalendar ? calendar.to : tab.to;
+					const icon = isCalendar ? calendar.icon : tab.icon;
+					const label = isCalendar ? calendar.label : tab.label;
+
+					return (
+						<NavLink
+							key={tab.to}
+							to={to}
+							end={tab.end}
+							className={({ isActive }) => `link-nav-tabs ${isActive ? 'current' : ''}`}
+						>
+							{({ isActive }) => (
+								<>
+									<Icon
+										icon={icon}
+										size="md"
+										color={isActive ? 'var(--c-accent)' : 'var(--c-muted)'}
+									/>
+									<span>{label}</span>
+								</>
+							)}
+						</NavLink>
+					);
+				})}
+			</div>
 		</nav>
 	);
 }

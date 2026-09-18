@@ -110,7 +110,7 @@ export default function Settings({ isOpen, onClose }) {
 		<>
 			{/* Backdrop */}
 			<div
-				className={`fixed inset-0 bg-white transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+				className={`fixed inset-0 bg-[var(--c-surface)] transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
 					isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
 				}`}
 				onClick={onClose}
@@ -118,7 +118,7 @@ export default function Settings({ isOpen, onClose }) {
 
 			{/* Settings Panel */}
 			<div
-				className={`fixed z-50 top-0 right-0 h-full w-full bg-white shadow-xl transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+				className={`fixed z-50 top-0 right-0 h-full w-full bg-[var(--c-surface)] shadow-xl transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
 					isOpen ? 'translate-x-0' : 'translate-x-full'
 				}`}
 			>
@@ -128,7 +128,7 @@ export default function Settings({ isOpen, onClose }) {
 						<h2 className="text-xl font-semibold">Settings</h2>
 						<button
 							onClick={onClose}
-							className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+							className="p-2 hover:bg-[var(--c-surface-sunk)] rounded-full transition-colors"
 						>
 							<Icon icon="x" size="lg" />
 						</button>
@@ -137,27 +137,27 @@ export default function Settings({ isOpen, onClose }) {
 					{/* Settings Content */}
 					<div className="flex-1 overflow-y-auto p-4 space-y-6">
 						{/* User Profile Section */}
-						<div className="pb-4 border-b border-gray-200">
-							<h3 className="text-xl text-center font-medium text-gray-900 capitalize">
+						<div className="pb-4 border-b border-[var(--c-border)]">
+							<h3 className="text-xl text-center font-medium text-[var(--c-text)] capitalize">
 								{user?.name}
 							</h3>
-							<p className="text-center text-sm text-gray-500 mt-1">
+							<p className="text-center text-sm text-[var(--c-muted)] mt-1">
 								Building habits since {formatDate(user?.createdAt)}
 							</p>
 						</div>
 
 						{/* Notifications Section */}
 						<div className="space-y-4">
-							<h3 className="text-lg font-medium text-gray-900">Notifications</h3>
+							<h3 className="text-lg font-medium text-[var(--c-text)]">Notifications</h3>
 
 							{notificationPermission === 'denied' && (
-								<div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800">
+								<div className="bg-[var(--c-warn-soft)] p-3 rounded-md text-sm text-[var(--c-warn)]">
 									Notifications are blocked. Please enable them in your browser settings.
 								</div>
 							)}
 
 							{isRegistering && (
-								<div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+								<div className="bg-[var(--c-accent-soft)] p-3 rounded-md text-sm text-[var(--c-accent-ink)]">
 									Updating notification settings...
 								</div>
 							)}
@@ -165,8 +165,10 @@ export default function Settings({ isOpen, onClose }) {
 							{/* Morning Notifications */}
 							<div className="flex items-center justify-between py-2">
 								<div>
-									<label className="block text-lg font-medium text-gray-700">Morning Recap</label>
-									<p className="text-gray-500">Daily summary of your habits at 9AM</p>
+									<label className="block text-lg font-medium text-[var(--c-text-soft)]">
+										Morning Recap
+									</label>
+									<p className="text-[var(--c-muted)]">Daily summary of your habits at 9AM</p>
 								</div>
 								<ToggleButton
 									checked={settings.morningNotifications}
@@ -178,10 +180,10 @@ export default function Settings({ isOpen, onClose }) {
 							{/* Evening Notifications */}
 							<div className="flex items-center justify-between py-2">
 								<div>
-									<label className="block text-lg font-medium text-gray-700">
+									<label className="block text-lg font-medium text-[var(--c-text-soft)]">
 										Evening Reminder
 									</label>
-									<p className="text-gray-500">Reminder to complete your habits at 9PM</p>
+									<p className="text-[var(--c-muted)]">Reminder to complete your habits at 9PM</p>
 								</div>
 								<ToggleButton
 									checked={settings.eveningNotifications}
@@ -193,22 +195,22 @@ export default function Settings({ isOpen, onClose }) {
 
 						{/* Calendar */}
 						<div className="space-y-3">
-							<h3 className="text-lg font-medium text-gray-900">Calendar</h3>
+							<h3 className="text-lg font-medium text-[var(--c-text)]">Calendar</h3>
 
 							{calendar === null ? (
-								<p className="text-sm text-gray-500">No habits yet.</p>
+								<p className="text-sm text-[var(--c-muted)]">No habits yet.</p>
 							) : (
 								<>
-									<p className="text-sm text-gray-500">
+									<p className="text-sm text-[var(--c-muted)]">
 										{calendar.count} of {calendar.total} habit
 										{calendar.total === 1 ? '' : 's'} can be added as recurring events.
 									</p>
 
 									{calendar.skipped.length > 0 && (
-										<ul className="text-xs text-gray-500 space-y-1">
+										<ul className="text-xs text-[var(--c-muted)] space-y-1">
 											{calendar.skipped.map(({ habit, reason }) => (
 												<li key={habit.id}>
-													<span className="text-gray-700">{habit.name}</span> —{' '}
+													<span className="text-[var(--c-text-soft)]">{habit.name}</span> —{' '}
 													{SKIP_REASONS[reason] || reason}
 												</li>
 											))}
@@ -220,13 +222,9 @@ export default function Settings({ isOpen, onClose }) {
 											<ButtonComponent href={calendar.url} variant="secondary" fullWidth>
 												Add to calendar
 											</ButtonComponent>
-											<p className="text-xs text-gray-400 text-center">
+											<p className="text-xs text-[var(--c-muted)] text-center">
 												Opens your calendar app.{' '}
-												<a
-													href={calendar.downloadUrl}
-													download="habits.ics"
-													className="underline"
-												>
+												<a href={calendar.downloadUrl} download="habits.ics" className="underline">
 													Download the file instead
 												</a>
 											</p>
@@ -234,9 +232,8 @@ export default function Settings({ isOpen, onClose }) {
 									)}
 
 									{calendar.count > 0 && !calendar.url && (
-										<p className="text-sm text-amber-700">
-											Too many habits to send this way — we would need a different
-											export route.
+										<p className="text-sm text-[var(--c-warn)]">
+											Too many habits to send this way — we would need a different export route.
 										</p>
 									)}
 								</>
@@ -245,7 +242,7 @@ export default function Settings({ isOpen, onClose }) {
 
 						{/* Account Section */}
 						<div className="space-y-4">
-							<h3 className="text-lg font-medium text-gray-900">Account</h3>
+							<h3 className="text-lg font-medium text-[var(--c-text)]">Account</h3>
 							<ButtonComponent onClick={handleSwitchProfile} variant="danger" fullWidth>
 								Switch profile
 							</ButtonComponent>
@@ -253,11 +250,11 @@ export default function Settings({ isOpen, onClose }) {
 					</div>
 
 					{/* Footer */}
-					<div className="p-4 border-t space-y-3">
-						<p className="text-center text-xs text-gray-400">Build {formatBuild()}</p>
-						<ButtonComponent onClick={onClose} variant="primary" size="lg" fullWidth>
-							Done
-						</ButtonComponent>
+					<div
+						className="p-4 border-t border-[var(--c-border)]"
+						style={{ paddingBottom: 'calc(1rem + var(--safe-bottom))' }}
+					>
+						<p className="text-center text-xs text-[var(--c-muted)]">Build {formatBuild()}</p>
 					</div>
 				</div>
 			</div>

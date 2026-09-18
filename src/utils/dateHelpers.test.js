@@ -96,3 +96,52 @@ describe('normalizeDate on a date-input string', () => {
 		expect(getLocalDateKey(normalizeDate('2024-06-03'))).toBe('2024-06-03');
 	});
 });
+
+describe('week helpers', () => {
+	it('returns seven days starting Monday', async () => {
+		const { getWeekDays } = await import('./dateHelpers');
+		const days = getWeekDays(new Date(2024, 5, 6));
+
+		expect(days).toHaveLength(7);
+		expect(days[0].getDay()).toBe(1);
+		expect(days[0].getDate()).toBe(3);
+		expect(days[6].getDate()).toBe(9);
+	});
+
+	it('steps whole weeks without drifting', async () => {
+		const { addWeeks } = await import('./dateHelpers');
+		expect(addWeeks(new Date(2024, 5, 3), 1).getDate()).toBe(10);
+		expect(addWeeks(new Date(2024, 5, 3), -1).getDate()).toBe(27);
+	});
+
+	it('names a week inside one month, and one that straddles two', async () => {
+		const { formatWeekTitle } = await import('./dateHelpers');
+		expect(formatWeekTitle(new Date(2024, 5, 5))).toBe('3 – 9 Jun');
+		// en-GB abbreviates September to four letters; that is the locale's form.
+		expect(formatWeekTitle(new Date(2024, 8, 30))).toBe('30 Sept – 6 Oct');
+	});
+});
+
+describe('getLocalDateKey with a key already', () => {
+	it('returns it untouched rather than re-parsing it as UTC', async () => {
+		const { getLocalDateKey } = await import('./dateHelpers');
+		// Regression: `new Date('2026-09-18')` is UTC midnight, which is the 17th
+		// in California — a todo set for tomorrow was stored as today.
+		expect(getLocalDateKey('2026-09-18')).toBe('2026-09-18');
+	});
+
+	it('round trips a date through a key and back', async () => {
+		const { getLocalDateKey, getStartOfToday, generateDateOffset } = await import(
+			'./dateHelpers'
+		);
+		const tomorrow = generateDateOffset(getStartOfToday(), 1);
+		const key = getLocalDateKey(tomorrow);
+
+		expect(getLocalDateKey(key)).toBe(key);
+	});
+
+	it('still formats Date objects', async () => {
+		const { getLocalDateKey } = await import('./dateHelpers');
+		expect(getLocalDateKey(new Date(2024, 5, 3))).toBe('2024-06-03');
+	});
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDayStatus, habitsForDay, completionsInWeekOf } from './dayStatus';
+import { getDayProgress, habitsForDay, completionsInWeekOf } from './dayStatus';
 import { FREQUENCY } from './schedule';
 
 const MON_JUN_3 = new Date(2024, 5, 3);
@@ -14,33 +14,56 @@ const daily = (name, completions = []) => ({
 	completions,
 });
 
-describe('getDayStatus', () => {
-	it('marks a fully completed past day', () => {
+describe('getDayProgress', () => {
+	it('counts every habit shown on the day, not only the ones strictly due', () => {
+		// The regression: two daily habits done plus an untouched flexible weekly
+		// one used to report "completed" while the card showed two of three.
+		const habits = [
+			daily('a', ['2024-06-03']),
+			daily('b', ['2024-06-03']),
+			{
+				id: 'gym',
+				frequency: FREQUENCY.WEEKLY,
+				timesPerPeriod: 3,
+				startDate: MON_JUN_3,
+				completions: [],
+			},
+		];
+
+		const progress = getDayProgress(habits, MON_JUN_3, WED_JUN_5);
+		expect(progress.done).toBe(2);
+		expect(progress.total).toBe(3);
+		expect(progress.complete).toBe(false);
+	});
+
+	it('is complete only when everything on the card is ticked', () => {
 		const habits = [daily('a', ['2024-06-03']), daily('b', ['2024-06-03'])];
-		expect(getDayStatus(habits, MON_JUN_3, WED_JUN_5)).toBe('completed');
+		const progress = getDayProgress(habits, MON_JUN_3, WED_JUN_5);
+
+		expect(progress.ratio).toBe(1);
+		expect(progress.complete).toBe(true);
 	});
 
-	it('marks a partially completed past day', () => {
-		const habits = [daily('a', ['2024-06-03']), daily('b', [])];
-		expect(getDayStatus(habits, MON_JUN_3, WED_JUN_5)).toBe('partial');
+	it('reports a fraction rather than a bucket', () => {
+		const habits = [daily('a', ['2024-06-03']), daily('b', []), daily('c', []), daily('d', [])];
+		expect(getDayProgress(habits, MON_JUN_3, WED_JUN_5).ratio).toBe(0.25);
 	});
 
-	it('marks a missed past day', () => {
-		const habits = [daily('a', []), daily('b', [])];
-		expect(getDayStatus(habits, MON_JUN_3, WED_JUN_5)).toBe('incomplete');
+	it('distinguishes one of four from three of four', () => {
+		const some = [daily('a', ['2024-06-03']), daily('b', []), daily('c', []), daily('d', [])];
+		const most = [
+			daily('a', ['2024-06-03']),
+			daily('b', ['2024-06-03']),
+			daily('c', ['2024-06-03']),
+			daily('d', []),
+		];
+
+		expect(getDayProgress(some, MON_JUN_3, WED_JUN_5).ratio).toBeLessThan(
+			getDayProgress(most, MON_JUN_3, WED_JUN_5).ratio
+		);
 	});
 
-	it('does not call today a miss', () => {
-		const habits = [daily('a', [])];
-		expect(getDayStatus(habits, WED_JUN_5, WED_JUN_5)).toBe('today-pending');
-	});
-
-	it('reports future days as future', () => {
-		const habits = [daily('a', [])];
-		expect(getDayStatus(habits, WED_JUN_5, MON_JUN_3)).toBe('future');
-	});
-
-	it('reports no-habits when nothing was scheduled', () => {
+	it('marks an empty day rather than calling it a zero', () => {
 		const habits = [
 			{
 				id: 'weekend',
@@ -50,26 +73,14 @@ describe('getDayStatus', () => {
 				completions: [],
 			},
 		];
-		expect(getDayStatus(habits, TUE_JUN_4, WED_JUN_5)).toBe('no-habits');
+		expect(getDayProgress(habits, TUE_JUN_4, WED_JUN_5).state).toBe('empty');
 	});
 
-	it('shows but does not judge a paused habit', () => {
-		const habits = [
-			daily('paused', []),
-			{ ...daily('paused2', []), pausedRanges: [{ from: '2024-06-03', to: null }] },
-		];
-		// Only the unpaused habit is judged, and it was missed.
-		expect(getDayStatus(habits, MON_JUN_3, WED_JUN_5)).toBe('incomplete');
-
-		const allPaused = [
-			{ ...daily('p', []), pausedRanges: [{ from: '2024-06-03', to: null }] },
-		];
-		expect(getDayStatus(allPaused, MON_JUN_3, WED_JUN_5)).toBe('no-habits');
-	});
-
-	it('ignores days before the habit started', () => {
+	it('labels today and the future so they are never shaded as misses', () => {
 		const habits = [daily('a', [])];
-		expect(getDayStatus(habits, new Date(2024, 5, 1), WED_JUN_5)).toBe('no-habits');
+		expect(getDayProgress(habits, WED_JUN_5, WED_JUN_5).state).toBe('today');
+		expect(getDayProgress(habits, WED_JUN_5, MON_JUN_3).state).toBe('future');
+		expect(getDayProgress(habits, MON_JUN_3, WED_JUN_5).state).toBe('past');
 	});
 });
 
@@ -98,7 +109,7 @@ describe('completionsInWeekOf', () => {
 	});
 });
 
-describe('flexible weekly habits do not fail individual days', () => {
+describe('flexible weekly habits count toward the day', () => {
 	const gym = completions => ({
 		id: 'gym',
 		frequency: FREQUENCY.WEEKLY,
@@ -107,19 +118,83 @@ describe('flexible weekly habits do not fail individual days', () => {
 		completions,
 	});
 
-	it('does not mark a day missed just because the week fell short', () => {
-		// Only one of three done that week. The other days were never owed.
-		const habits = [gym(['2024-06-03'])];
-		expect(getDayStatus(habits, TUE_JUN_4, new Date(2024, 5, 20))).toBe('no-habits');
+	it('counts as done on a day it was actually done', () => {
+		expect(getDayProgress([gym(['2024-06-03'])], MON_JUN_3, new Date(2024, 5, 20))).toMatchObject({
+			done: 1,
+			total: 1,
+			complete: true,
+		});
 	});
 
-	it('still credits the days it was done', () => {
-		const habits = [gym(['2024-06-03'])];
-		expect(getDayStatus(habits, MON_JUN_3, new Date(2024, 5, 20))).toBe('completed');
+	it('is simply absent on a day it does not appear', () => {
+		// Target met earlier in the week, so it is off Tuesday's card entirely.
+		const habit = gym(['2024-06-03', '2024-06-04', '2024-06-05']);
+		expect(getDayProgress([habit], new Date(2024, 5, 6), new Date(2024, 5, 20)).state).toBe('empty');
+	});
+});
+
+describe('todos count toward a day', () => {
+	const todo = (id, dueDate, completedOn = null) => ({ id, title: id, dueDate, completedOn });
+
+	it('counts errands alongside habits', async () => {
+		const { getDayProgress } = await import('./dayStatus');
+		const habits = [daily('read', ['2024-06-03'])];
+		const todos = [todo('parcel', '2024-06-03'), todo('call', '2024-06-03', '2024-06-03')];
+
+		// Habit done, one errand done, one not.
+		expect(getDayProgress(habits, MON_JUN_3, WED_JUN_5, todos)).toMatchObject({
+			done: 2,
+			total: 3,
+		});
 	});
 
-	it('does not let a weekly habit mask a missed daily one', () => {
-		const habits = [gym(['2024-06-04']), daily('read', [])];
-		expect(getDayStatus(habits, TUE_JUN_4, new Date(2024, 5, 20))).toBe('partial');
+	it('only reads as complete when the errands are done too', async () => {
+		const { getDayProgress } = await import('./dayStatus');
+		const habits = [daily('read', ['2024-06-03'])];
+
+		expect(
+			getDayProgress(habits, MON_JUN_3, WED_JUN_5, [todo('parcel', '2024-06-03')]).complete
+		).toBe(false);
+		expect(
+			getDayProgress(habits, MON_JUN_3, WED_JUN_5, [
+				todo('parcel', '2024-06-03', '2024-06-03'),
+			]).complete
+		).toBe(true);
+	});
+
+	it('ignores errands due on other days', async () => {
+		const { getDayProgress } = await import('./dayStatus');
+		expect(
+			getDayProgress([daily('read', [])], MON_JUN_3, WED_JUN_5, [todo('later', '2024-06-09')])
+				.total
+		).toBe(1);
+	});
+});
+
+describe('getDayItems', () => {
+	const todo = (id, dueDate, completedOn = null) => ({ id, title: id, dueDate, completedOn });
+
+	it('lists errands before habits, one entry per bullet', async () => {
+		const { getDayItems } = await import('./dayStatus');
+		const items = getDayItems(
+			[daily('read', ['2024-06-03'])],
+			MON_JUN_3,
+			[todo('parcel', '2024-06-03')]
+		);
+
+		expect(items.map(i => i.kind)).toEqual(['todo', 'habit']);
+		expect(items.map(i => i.done)).toEqual([false, true]);
+	});
+
+	it('matches the counts the ratio is built from', async () => {
+		const { getDayItems, getDayProgress } = await import('./dayStatus');
+		const habits = [daily('a', ['2024-06-03']), daily('b', [])];
+		const todos = [todo('parcel', '2024-06-03', '2024-06-03')];
+
+		const items = getDayItems(habits, MON_JUN_3, todos);
+		const progress = getDayProgress(habits, MON_JUN_3, WED_JUN_5, todos);
+
+		expect(items).toHaveLength(progress.total);
+		expect(items.filter(i => i.done)).toHaveLength(progress.done);
 	});
 });

@@ -15,7 +15,7 @@ export function getEndOfWeek(date) {
 }
 
 export function isSameDay(date1, date2) {
-	return new Date(date1).toDateString() === new Date(date2).toDateString();
+	return getLocalDateKey(date1) === getLocalDateKey(date2);
 }
 
 export function formatDateTitle(date) {
@@ -51,11 +51,22 @@ export function getStartOfToday() {
 	return date;
 }
 
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
 // Stable YYYY-MM-DD key for the date as it reads on the user's own calendar.
 // Unlike getUniqueDateIdentifier this never shifts across the UTC boundary, so
 // it is safe to build cache keys from.
 export function getLocalDateKey(date) {
-	const d = new Date(date);
+	// Already a key. Passing it through `new Date` would parse it as UTC
+	// midnight, which is the previous day anywhere west of Greenwich — that is
+	// how a todo set for tomorrow landed on today in California.
+	if (typeof date === 'string' && DATE_KEY.test(date)) return date;
+
+	const d =
+		typeof date === 'string'
+			? new Date(`${date}T00:00:00`) // any other string: read it as local
+			: new Date(date);
+
 	const month = String(d.getMonth() + 1).padStart(2, '0');
 	const day = String(d.getDate()).padStart(2, '0');
 	return `${d.getFullYear()}-${month}-${day}`;
@@ -94,4 +105,53 @@ export function getMonthGrid(date) {
 	}
 
 	return days;
+}
+
+// Short label for a day in the near future: "Tomorrow" beats "Thu 18 Sep" when
+// it applies, and the weekday matters more than the year when it does not.
+export function formatRelativeDay(date, today = new Date()) {
+	const days = Math.round(
+		(new Date(date).setHours(0, 0, 0, 0) - new Date(today).setHours(0, 0, 0, 0)) /
+			(24 * 60 * 60 * 1000)
+	);
+
+	if (days === 0) return 'Today';
+	if (days === 1) return 'Tomorrow';
+
+	return new Intl.DateTimeFormat('en-GB', {
+		weekday: 'short',
+		day: 'numeric',
+		month: 'short',
+	}).format(new Date(date));
+}
+
+export function getWeekDays(date) {
+	const start = getStartOfWeek(date);
+
+	return Array.from({ length: 7 }, (_, i) => {
+		const day = new Date(start);
+		day.setDate(start.getDate() + i);
+		day.setHours(0, 0, 0, 0);
+		return day;
+	});
+}
+
+export function addWeeks(date, count) {
+	const d = new Date(date);
+	d.setDate(d.getDate() + count * 7);
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+// "15 – 21 Sep" for a week inside one month, "29 Sep – 5 Oct" when it straddles.
+export function formatWeekTitle(date) {
+	const days = getWeekDays(date);
+	const start = days[0];
+	const end = days[6];
+
+	const month = d => new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(d);
+
+	return start.getMonth() === end.getMonth()
+		? `${start.getDate()} – ${end.getDate()} ${month(end)}`
+		: `${start.getDate()} ${month(start)} – ${end.getDate()} ${month(end)}`;
 }

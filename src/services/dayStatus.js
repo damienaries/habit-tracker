@@ -1,5 +1,5 @@
 import { getLocalDateKey, getStartOfWeek, isSameDay } from '../utils/dateHelpers';
-import { shouldAppearOn, isExpectedOn } from './schedule';
+import { shouldAppearOn } from './schedule';
 
 export function completionsInWeekOf(habit, date) {
 	const weekStart = getStartOfWeek(date);
@@ -16,37 +16,73 @@ export function completionsInWeekOf(habit, date) {
 
 // Which of these habits belong on this day's card.
 export function habitsForDay(habits, date) {
-	return habits.filter(habit =>
-		shouldAppearOn(habit, date, completionsInWeekOf(habit, date))
-	);
+	return habits.filter(habit => shouldAppearOn(habit, date, completionsInWeekOf(habit, date)));
 }
 
-// One word for how a day went, shared by the month grid and the day views so
-// the calendar and the day itself can never disagree. Paused habits are shown
-// but not judged.
-export function getDayStatus(habits, date, today = new Date()) {
-	if (!isSameDay(date, today) && date > today) return 'future';
-
-	const onThisDay = habitsForDay(habits, date);
-	if (onThisDay.length === 0) return 'no-habits';
-
+/**
+ * Everything planned for a day, in the order it should be read: errands first,
+ * then habits. One entry per bullet on the week view.
+ */
+export function getDayItems(habits, date, todos = []) {
 	const dateKey = getLocalDateKey(date);
-	const isDone = habit => (habit.completions || []).includes(dateKey);
 
-	// Only habits actually due on this date are judged. A paused habit, or one
-	// whose target is weekly rather than daily, is shown but never counted as a
-	// miss against a particular day.
-	const judged = onThisDay.filter(habit => isExpectedOn(habit, date));
+	const todoItems = todos
+		.filter(todo => todo.dueDate === dateKey)
+		.map(todo => ({
+			id: `todo-${todo.id}`,
+			kind: 'todo',
+			label: todo.title,
+			done: Boolean(todo.completedOn),
+		}));
 
-	if (judged.length === 0) {
-		return onThisDay.some(isDone) ? 'completed' : 'no-habits';
-	}
+	const habitItems = habitsForDay(habits, date).map(habit => ({
+		id: `habit-${habit.id}`,
+		kind: 'habit',
+		label: habit.name,
+		done: (habit.completions || []).includes(dateKey),
+	}));
 
-	const doneCount = judged.filter(isDone).length;
+	return [...todoItems, ...habitItems];
+}
 
-	if (doneCount === judged.length) return 'completed';
-	// Anything done counts as partial, including a weekly habit that was not
-	// owed today — a day with real effort in it should not read as a blank miss.
-	if (onThisDay.some(isDone)) return 'partial';
-	return isSameDay(date, today) ? 'today-pending' : 'incomplete';
+/**
+ * How much of a day got done, as a fraction.
+ *
+ * Every habit shown on the day counts toward the total — including flexible
+ * weekly ones. An earlier version judged only the habits strictly *due* that
+ * date, which meant a day showing two of three ticks reported itself as
+ * complete. The denominator has to be the one you can see.
+ *
+ * Returns a ratio rather than a status word so the calendar can shade by
+ * degree: three buckets threw away the difference between one of four and
+ * three of four.
+ *
+ * Todos count too when they are passed in — ticking everything you planned for
+ * a day should read as a full day whether it was a habit or an errand.
+ */
+export function getDayProgress(habits, date, today = new Date(), todos = []) {
+	const onThisDay = habitsForDay(habits, date);
+	const dateKey = getLocalDateKey(date);
+	const dayTodos = todos.filter(todo => todo.dueDate === dateKey);
+
+	const total = onThisDay.length + dayTodos.length;
+	const done =
+		onThisDay.filter(habit => (habit.completions || []).includes(dateKey)).length +
+		dayTodos.filter(todo => Boolean(todo.completedOn)).length;
+
+	const isToday = isSameDay(date, today);
+	const isFuture = !isToday && date > today;
+
+	let state = 'past';
+	if (total === 0) state = 'empty';
+	else if (isFuture) state = 'future';
+	else if (isToday) state = 'today';
+
+	return {
+		done,
+		total,
+		ratio: total === 0 ? 0 : done / total,
+		complete: total > 0 && done === total,
+		state,
+	};
 }

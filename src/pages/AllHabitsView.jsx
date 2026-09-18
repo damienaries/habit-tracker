@@ -4,7 +4,6 @@ import { getAllHabits } from '../services/habitService';
 import { habitKeys } from '../queries/habitKeys';
 import HabitCard from '../components/HabitCard';
 import { useUser } from '../contexts/UserContext';
-import Icon from '../components/icons/Icon';
 
 function HabitSection({ title, hint, habits }) {
 	if (habits.length === 0) return null;
@@ -12,8 +11,8 @@ function HabitSection({ title, hint, habits }) {
 	return (
 		<section className="space-y-3">
 			<div>
-				<h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{title}</h2>
-				{hint && <p className="text-xs text-gray-400">{hint}</p>}
+				<h2 className="text-eyebrow">{title}</h2>
+				{hint && <p className="text-xs text-[var(--c-muted)] mt-0.5">{hint}</p>}
 			</div>
 			<ul className="space-y-3">
 				{habits.map(habit => (
@@ -52,17 +51,15 @@ export default function AllHabitsView() {
 	}, [habits]);
 
 	return (
-		<div className="p-6 max-w-screen-sm mx-auto space-y-8">
-			<h1 className="text-xl flex items-center gap-2">
-				<Icon icon="streak-up" size="lg" color="#6B7280" />
-				<span>Streak progress for {user?.name}</span>
-			</h1>
+		<div className="px-4 py-5 space-y-7">
+			<h1 className="text-display text-[1.9rem]">Streaks</h1>
 
-			{isLoading && <p className="text-gray-500">Loading habits...</p>}
-			{error && <p className="text-red-600">Error loading habits.</p>}
+
+			{isLoading && <p className="text-[var(--c-muted)]">Loading habits...</p>}
+			{error && <p className="text-[var(--c-danger)]">Error loading habits.</p>}
 
 			{!isLoading && habits?.length === 0 && (
-				<p className="text-gray-400">No habits created yet.</p>
+				<p className="text-[var(--c-muted)]">No habits created yet.</p>
 			)}
 
 			<HabitSection title="Active" habits={active} />
@@ -73,7 +70,7 @@ export default function AllHabitsView() {
 			/>
 
 			{!isLoading && habits?.length > 0 && active.length === 0 && (
-				<p className="text-gray-400">
+				<p className="text-[var(--c-muted)]">
 					Nothing active right now. Create a habit to start a new streak.
 				</p>
 			)}

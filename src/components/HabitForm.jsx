@@ -103,14 +103,14 @@ export default function HabitForm({ onCreate }) {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="flex flex-col gap-y-6 w-full my-4 rounded border border-gray-50 p-2"
+			className="flex flex-col gap-y-5 w-full"
 		>
-			{error && <div className="text-red-600 text-sm">{error}</div>}
+			{error && <div className="text-[var(--c-danger)] text-sm">{error}</div>}
 
 			{message && (
 				<div
 					className={`text-sm px-4 py-2 rounded-md ${
-						message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+						message.type === 'success' ? 'bg-[var(--c-done-soft)] text-[var(--c-done)]' : 'bg-[var(--c-danger-soft)] text-[var(--c-danger)]'
 					}`}
 				>
 					{message.text}
@@ -150,10 +150,10 @@ export default function HabitForm({ onCreate }) {
 								key={preset.label}
 								type="button"
 								onClick={() => setDaysOfWeek(preset.days)}
-								className={`px-3 py-1 rounded-full border text-xs transition-colors ${
+								className={`px-3 py-2 rounded-full border text-xs font-medium transition-colors ${
 									sameDays(daysOfWeek, preset.days)
-										? 'bg-gray-800 text-white border-gray-800'
-										: 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+										? 'bg-[var(--c-text)] text-white border-[var(--c-text)]'
+										: 'bg-[var(--c-surface)] text-[var(--c-text-soft)] border-[var(--c-border)] hover:bg-[var(--c-surface-sunk)]'
 								}`}
 							>
 								{preset.label}
@@ -171,10 +171,10 @@ export default function HabitForm({ onCreate }) {
 										prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
 									)
 								}
-								className={`px-3 py-2 rounded-md border text-sm transition-colors ${
+								className={`min-w-[38px] min-h-[34px] px-3 rounded-[var(--radius-sm)] border text-sm font-medium transition-colors ${
 									daysOfWeek.includes(day)
-										? 'bg-gray-800 text-white border-gray-800'
-										: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+										? 'bg-[var(--c-text)] text-white border-[var(--c-text)]'
+										: 'bg-[var(--c-surface)] text-[var(--c-text-soft)] border-[var(--c-border)] hover:bg-[var(--c-surface-sunk)]'
 								}`}
 							>
 								{label}

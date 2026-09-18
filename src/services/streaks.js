@@ -53,10 +53,14 @@ function eachDay(fromKey, through, visit) {
 	}
 }
 
-// Consecutive scheduled days completed. Meaningless for flexible weekly habits
-// (rest days are the point), so those report null and lean on weeks instead.
+// Consecutive completions that went to plan.
+//
+// For a daily or fixed-day habit that means consecutive scheduled days. A
+// flexible habit has no scheduled days, so it counts completions instead and
+// breaks only when a finished week came in under target — ticking one off
+// always moves the number either way.
 export function calculateDayStreaks(habit, today = new Date()) {
-	if (habit.frequency === FREQUENCY.WEEKLY) return null;
+	if (habit.frequency === FREQUENCY.WEEKLY) return flexibleDayStreaks(habit, today);
 
 	const from = firstTrackedDate(habit);
 	if (!from) return { ...EMPTY };
@@ -71,6 +75,41 @@ export function calculateDayStreaks(habit, today = new Date()) {
 		if (key === todayKey && !done.has(key)) return;
 		results.push(done.has(key));
 	});
+
+	return summarizeRuns(results);
+}
+
+function flexibleDayStreaks(habit, today) {
+	const from = firstTrackedDate(habit);
+	if (!from) return { ...EMPTY };
+
+	const done = new Set(habit.completions || []);
+	const currentWeekStart = getStartOfWeek(today);
+	const cursor = getStartOfWeek(new Date(`${from}T00:00:00`));
+	const results = [];
+
+	while (cursor <= currentWeekStart) {
+		const target = weeklyTarget(habit, cursor);
+		let hits = 0;
+
+		for (let i = 0; i < 7; i++) {
+			const day = new Date(cursor);
+			day.setDate(cursor.getDate() + i);
+			if (done.has(getLocalDateKey(day))) hits++;
+		}
+
+		const isCurrentWeek = cursor.getTime() === currentWeekStart.getTime();
+
+		if (target > 0 && !isCurrentWeek && hits < target) {
+			// A finished week that fell short ends the run, and its completions
+			// do not count toward it.
+			results.push(false);
+		} else {
+			for (let i = 0; i < hits; i++) results.push(true);
+		}
+
+		cursor.setDate(cursor.getDate() + 7);
+	}
 
 	return summarizeRuns(results);
 }
@@ -109,8 +148,8 @@ export function calculateWeekStreaks(habit, today = new Date()) {
 	return summarizeRuns(results);
 }
 
-// days.total counts completed scheduled days; weeks.total counts weeks that hit
-// their target. days is null for flexible weekly habits — see calculateDayStreaks.
+// days.total counts completions that went to plan; weeks.total counts weeks
+// that hit their target.
 export function calculateStreaks(habit, today = new Date()) {
 	return {
 		days: calculateDayStreaks(habit, today),

@@ -77,6 +77,16 @@ db.version(3)
 	})
 	.upgrade(applyV3Upgrade);
 
+// v4 adds one-off todos. They live in their own table rather than sharing the
+// habit one: a todo has a due date and a done state and nothing else, while a
+// habit carries a schedule, streaks, pause history and an end reason.
+// Both feed the weekly success rate, which reads from each in turn.
+db.version(4).stores({
+	users: '++id, name, createdAt, settings',
+	habits: '++id, userId, name, frequency, startDate, endDate, timesPerPeriod',
+	todos: '++id, userId, dueDate, completedOn',
+});
+
 // Toggle a habit's completion for one day. Completions are local date keys, so
 // there is no time component to get wrong. Streaks are derived from this array
 // rather than tracked alongside it — see services/streaks.js.

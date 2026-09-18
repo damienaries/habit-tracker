@@ -77,14 +77,14 @@ describe('day streaks', () => {
 		});
 	});
 
-	it('is null for flexible weekly habits', () => {
+	it('counts completions for a flexible weekly habit', () => {
 		const habit = {
 			frequency: FREQUENCY.WEEKLY,
 			timesPerPeriod: 3,
 			startDate: MON_JUN_3,
 			completions: ['2024-06-03'],
 		};
-		expect(calculateDayStreaks(habit, new Date(2024, 5, 5))).toBeNull();
+		expect(calculateDayStreaks(habit, new Date(2024, 5, 5)).current).toBe(1);
 	});
 
 	it('does not count paused days as misses', () => {
@@ -216,3 +216,51 @@ describe('a quit habit keeps its record', () => {
 		});
 	});
 })
+
+describe('flexible weekly habits count days too', () => {
+	const flexible = (completions, overrides = {}) => ({
+		frequency: FREQUENCY.WEEKLY,
+		timesPerPeriod: 2,
+		startDate: MON_JUN_3,
+		completions,
+		...overrides,
+	});
+
+	it('increments on every tick rather than reporting nothing', () => {
+		expect(calculateDayStreaks(flexible(['2024-06-04']), new Date(2024, 5, 5))).toMatchObject({
+			current: 1,
+		});
+		expect(
+			calculateDayStreaks(flexible(['2024-06-04', '2024-06-06']), new Date(2024, 5, 6))
+		).toMatchObject({ current: 2 });
+	});
+
+	it('carries the run across weeks that hit their target', () => {
+		const habit = flexible(['2024-06-04', '2024-06-06', '2024-06-11', '2024-06-13']);
+		expect(calculateDayStreaks(habit, new Date(2024, 5, 13))).toMatchObject({
+			current: 4,
+			best: 4,
+		});
+	});
+
+	it('breaks when a finished week came in under target', () => {
+		// Week one hit 2 of 2; week two managed only 1; week three hit 2 again.
+		const habit = flexible([
+			'2024-06-04', '2024-06-06',
+			'2024-06-11',
+			'2024-06-18', '2024-06-20',
+		]);
+
+		expect(calculateDayStreaks(habit, new Date(2024, 5, 20))).toMatchObject({
+			current: 2,
+			best: 2,
+			last: 2,
+		});
+	});
+
+	it('does not judge the week still in progress', () => {
+		const habit = flexible(['2024-06-04', '2024-06-06', '2024-06-11']);
+		// Tuesday of week two, 1 of 2 so far — the run stands at 3.
+		expect(calculateDayStreaks(habit, new Date(2024, 5, 11)).current).toBe(3);
+	});
+});

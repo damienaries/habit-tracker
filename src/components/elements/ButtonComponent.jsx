@@ -14,21 +14,21 @@ export default function ButtonComponent({
 	children,
 }) {
 	const baseclasses =
-		'inline-flex items-center justify-center gap-6 font-medium text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-md cursor-pointer';
+		'inline-flex items-center justify-center gap-2 font-semibold text-center rounded-[var(--radius-sm)] cursor-pointer min-h-[40px] transition-[background-color,transform] duration-[var(--dur-quick)] ease-[var(--ease-out)] active:scale-[0.97]';
 
 	const sizeClasses = {
-		sm: 'text-sm px-3 py-1.5',
+		sm: 'text-sm px-3 py-2 min-h-[34px]',
 		base: 'text-base px-4 py-2',
 		lg: 'text-lg px-6 py-3',
 	}[size];
 
 	const variantClasses = {
-		primary: 'bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-700',
+		primary: 'bg-[var(--c-text)] text-white hover:opacity-90',
 		secondary:
-			'bg-gray-100 text-gray-800 hover:bg-gray-300 focus:ring-gray-500 border border-gray-300',
-		danger: 'bg-red-800 text-white hover:bg-red-700 focus:ring-red-700',
-		success: 'bg-green-700 text-white hover:bg-green-600 focus:ring-green-600',
-		warning: 'bg-amber-600 text-white hover:bg-amber-500 focus:ring-amber-500',
+			'bg-[var(--c-surface)] text-[var(--c-text)] border border-[var(--c-border-strong)] hover:bg-[var(--c-surface-sunk)]',
+		danger: 'bg-[var(--c-danger)] text-white hover:opacity-90',
+		success: 'bg-[var(--c-done)] text-white hover:opacity-90',
+		warning: 'bg-[var(--c-warn)] text-[var(--c-text)] hover:opacity-90',
 	}[variant];
 
 	const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';

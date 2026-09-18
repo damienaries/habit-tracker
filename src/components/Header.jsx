@@ -1,33 +1,39 @@
-import { useLocation, matchRoutes } from 'react-router-dom';
 import { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import Settings from './Settings';
+import Icon from './icons/Icon';
 
-export default function Header({ routes }) {
-	const location = useLocation();
+export default function Header() {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const { user } = useUser();
 
-	const matchedRoute = matchRoutes(routes, location)?.[0]?.route;
-	const title = matchedRoute?.title || 'Page';
-
-	function toggleSettings() {
-		setIsSettingsOpen(!isSettingsOpen);
-	}
-
 	return (
 		<>
-			<header className="fixed top-0 w-full h-16 bg-white shadow-md flex items-center justify-center z-10 text-gray-900">
-				<h1 className="text-xl font-bold">{title}</h1>
-				<div
-					onClick={toggleSettings}
-					className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center gap-4 pr-4"
-				>
-					<div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold text-lg">
-						{user?.name?.[0]?.toUpperCase() || '?'}
-					</div>
+			<header
+				className="fixed top-0 inset-x-0 z-20 bg-[var(--c-bg)]/90 backdrop-blur border-b border-[var(--c-border)]"
+				style={{ paddingTop: 'var(--safe-top)' }}
+			>
+				<div className="mx-auto max-w-[520px] h-[var(--header-h)] px-4 flex items-center justify-between">
+					<span
+						className="grid place-items-center w-9 h-9 rounded-xl bg-[var(--c-accent-soft)]"
+						aria-label="Habit tracker"
+					>
+						<Icon icon="fire" color="var(--c-accent)" size="md" />
+					</span>
+
+					<button
+						type="button"
+						onClick={() => setIsSettingsOpen(true)}
+						aria-label="Settings"
+						className="w-9 h-9 -mr-2 grid place-items-center rounded-full transition-colors hover:bg-[var(--c-surface-sunk)]"
+					>
+						<span className="w-[30px] h-[30px] rounded-full bg-[var(--c-text)] text-white grid place-items-center font-semibold text-sm">
+							{user?.name?.[0]?.toUpperCase() || '?'}
+						</span>
+					</button>
 				</div>
 			</header>
+
 			<Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 		</>
 	);
