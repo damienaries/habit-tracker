@@ -12,7 +12,7 @@ export default [
 		files: ['**/*.{js,jsx}'],
 		languageOptions: {
 			ecmaVersion: 2020,
-			globals: { ...globals.browser, __BUILD_REF__: 'readonly', __BUILD_TIME__: 'readonly' },
+			globals: globals.browser,
 			parserOptions: {
 				ecmaVersion: 'latest',
 				ecmaFeatures: { jsx: true },

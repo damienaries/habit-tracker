@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
 import {
 	addMonths,
 	addWeeks,
@@ -21,16 +20,11 @@ import DaySheet from '../components/DaySheet';
 import MonthGrid from '../components/MonthGrid';
 import WeekView from '../components/WeekView';
 
-export default function CalendarView() {
+export default function CalendarView({ view = 'month' }) {
 	const { user } = useUser();
 	const today = useToday();
-	const [searchParams, setSearchParams] = useSearchParams();
 	const [anchor, setAnchor] = useState(() => new Date(today));
 	const [openDate, setOpenDate] = useState(null);
-
-	// The view lives in the URL so the tab bar can flip it without the two
-	// components having to share state.
-	const view = searchParams.get('view') === 'week' ? 'week' : 'month';
 
 	const { data: habits = [] } = useQuery({
 		queryKey: habitKeys.byUser(user?.id),
@@ -79,11 +73,6 @@ export default function CalendarView() {
 			view === 'week' ? addWeeks(current, direction) : addMonths(current, direction)
 		);
 
-	const setView = next => {
-		setSearchParams(next === 'week' ? { view: 'week' } : {}, { replace: true });
-		setAnchor(new Date(today));
-	};
-
 	return (
 		<div className="px-4 py-5">
 			<div className="flex items-center justify-between mb-3 gap-2">
@@ -109,27 +98,6 @@ export default function CalendarView() {
 						<span aria-hidden="true" className="text-xl leading-none">›</span>
 					</button>
 				</div>
-			</div>
-
-			<div
-				role="tablist"
-				aria-label="Calendar range"
-				className="flex p-1 gap-1 rounded-[var(--radius)] bg-[var(--c-surface-sunk)] mb-4"
-			>
-				{['week', 'month'].map(option => (
-					<button
-						key={option}
-						type="button"
-						role="tab"
-						aria-selected={view === option}
-						onClick={() => setView(option)}
-						className={`flex-1 min-h-[34px] rounded-[var(--radius-sm)] text-sm font-semibold capitalize
-							transition-colors duration-[var(--dur-quick)]
-							${view === option ? 'bg-[var(--c-surface)] text-[var(--c-text)] shadow-sm' : 'text-[var(--c-muted)]'}`}
-					>
-						{option}
-					</button>
-				))}
 			</div>
 
 			{view === 'week' ? (

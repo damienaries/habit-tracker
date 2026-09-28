@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Icon from './icons/Icon';
 import ButtonComponent from './elements/ButtonComponent';
@@ -6,9 +6,6 @@ import ToggleButton from './elements/ToggleButton';
 import { useUser } from '../contexts/UserContext';
 import { NotificationService } from '../services/notificationService';
 import { getAllHabits } from '../services/habitService';
-import { buildCalendar } from '../services/icsExport';
-import { calendarUrl, webcalUrl } from '../services/calendarDelivery';
-import { formatBuild } from '../services/buildInfo';
 import { habitKeys } from '../queries/habitKeys';
 
 const SKIP_REASONS = {
@@ -25,22 +22,6 @@ export default function Settings({ isOpen, onClose }) {
 		queryFn: () => getAllHabits(user.id),
 		enabled: !!user,
 	});
-
-	// Built up front so the button can be a real link. A programmatic
-	// window.open is treated as a popup and, in a standalone PWA, navigates the
-	// app away instead of handing the file to the OS.
-	const calendar = useMemo(() => {
-		if (habits.length === 0) return null;
-
-		const { ics, scheduled, skipped } = buildCalendar(habits);
-		return {
-			url: webcalUrl(ics, window.location.origin),
-			downloadUrl: calendarUrl(ics, window.location.origin),
-			count: scheduled.length,
-			total: habits.length,
-			skipped,
-		};
-	}, [habits]);
 
 	const [settings, setSettings] = useState({
 		morningNotifications: user?.settings?.morningNotifications ?? true,
@@ -192,61 +173,6 @@ export default function Settings({ isOpen, onClose }) {
 								/>
 							</div>
 						</div>
-
-						{/* Calendar */}
-						<div className="space-y-3">
-							<h3 className="text-lg font-medium text-[var(--c-text)]">Calendar</h3>
-
-							{calendar === null ? (
-								<p className="text-sm text-[var(--c-muted)]">No habits yet.</p>
-							) : (
-								<>
-									<p className="text-sm text-[var(--c-muted)]">
-										{calendar.count} of {calendar.total} habit
-										{calendar.total === 1 ? '' : 's'} can be added as recurring events.
-									</p>
-
-									{calendar.skipped.length > 0 && (
-										<ul className="text-xs text-[var(--c-muted)] space-y-1">
-											{calendar.skipped.map(({ habit, reason }) => (
-												<li key={habit.id}>
-													<span className="text-[var(--c-text-soft)]">{habit.name}</span> —{' '}
-													{SKIP_REASONS[reason] || reason}
-												</li>
-											))}
-										</ul>
-									)}
-
-									{calendar.count > 0 && calendar.url && (
-										<>
-											<ButtonComponent href={calendar.url} variant="secondary" fullWidth>
-												Add to calendar
-											</ButtonComponent>
-											<p className="text-xs text-[var(--c-muted)] text-center">
-												Opens your calendar app.{' '}
-												<a href={calendar.downloadUrl} download="habits.ics" className="underline">
-													Download the file instead
-												</a>
-											</p>
-										</>
-									)}
-
-									{calendar.count > 0 && !calendar.url && (
-										<p className="text-sm text-[var(--c-warn)]">
-											Too many habits to send this way — we would need a different export route.
-										</p>
-									)}
-								</>
-							)}
-						</div>
-
-						{/* Account Section */}
-						<div className="space-y-4">
-							<h3 className="text-lg font-medium text-[var(--c-text)]">Account</h3>
-							<ButtonComponent onClick={handleSwitchProfile} variant="danger" fullWidth>
-								Switch profile
-							</ButtonComponent>
-						</div>
 					</div>
 
 					{/* Footer */}
@@ -254,7 +180,9 @@ export default function Settings({ isOpen, onClose }) {
 						className="p-4 border-t border-[var(--c-border)]"
 						style={{ paddingBottom: 'calc(1rem + var(--safe-bottom))' }}
 					>
-						<p className="text-center text-xs text-[var(--c-muted)]">Build {formatBuild()}</p>
+						<ButtonComponent onClick={handleSwitchProfile} variant="secondary" fullWidth>
+							Switch profile
+						</ButtonComponent>
 					</div>
 				</div>
 			</div>

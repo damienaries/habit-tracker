@@ -85,7 +85,7 @@ describe('getDayProgress', () => {
 });
 
 describe('habitsForDay', () => {
-	it('drops a flexible weekly habit once the week target is met', () => {
+	it('keeps a flexible weekly habit on the card after the target is met', () => {
 		const habit = {
 			id: 'gym',
 			frequency: FREQUENCY.WEEKLY,
@@ -93,9 +93,7 @@ describe('habitsForDay', () => {
 			startDate: MON_JUN_3,
 			completions: ['2024-06-03', '2024-06-04'],
 		};
-		expect(habitsForDay([habit], WED_JUN_5)).toHaveLength(0);
-		// ...but the days it was actually done still show it.
-		expect(habitsForDay([habit], TUE_JUN_4)).toHaveLength(1);
+		expect(habitsForDay([habit], WED_JUN_5)).toHaveLength(1);
 	});
 });
 
@@ -196,5 +194,44 @@ describe('getDayItems', () => {
 
 		expect(items).toHaveLength(progress.total);
 		expect(items.filter(i => i.done)).toHaveLength(progress.done);
+	});
+});
+
+describe('extra credit does not punish a met target', () => {
+	const gym = completions => ({
+		id: 'gym',
+		frequency: FREQUENCY.WEEKLY,
+		timesPerPeriod: 2,
+		startDate: MON_JUN_3,
+		completions,
+	});
+
+	it('leaves a met weekly habit out of the day total', async () => {
+		const { getDayProgress } = await import('./dayStatus');
+		// Target already hit Mon and Tue; Wednesday owes only the daily habit.
+		const habits = [gym(['2024-06-03', '2024-06-04']), daily('read', ['2024-06-05'])];
+
+		expect(getDayProgress(habits, WED_JUN_5, new Date(2024, 5, 20))).toMatchObject({
+			done: 1,
+			total: 1,
+			complete: true,
+		});
+	});
+
+	it('still counts it while the target is unmet', async () => {
+		const { getDayProgress } = await import('./dayStatus');
+		const habits = [gym(['2024-06-03']), daily('read', ['2024-06-05'])];
+
+		expect(getDayProgress(habits, WED_JUN_5, new Date(2024, 5, 20))).toMatchObject({
+			done: 1,
+			total: 2,
+		});
+	});
+
+	it('marks the bonus item so the card can dim it', async () => {
+		const { getDayItems } = await import('./dayStatus');
+		const items = getDayItems([gym(['2024-06-03', '2024-06-04'])], WED_JUN_5);
+
+		expect(items[0]).toMatchObject({ kind: 'habit', bonus: true, done: false });
 	});
 });

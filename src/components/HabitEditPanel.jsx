@@ -14,14 +14,16 @@ import { FREQUENCY, END_REASON, isPausedNow } from '../services/schedule';
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /**
- * An icon action.
+ * A quarter of the control row: icon over a short label.
  *
- * These were five text buttons of equal weight sitting next to Save and Cancel,
- * which made every option look equally likely. As icons they stop competing
- * with the form's own actions — title and aria-label carry the meaning for
- * pointer and screen-reader users respectively.
+ * These were five text buttons of equal weight sitting next to Save and
+ * Cancel, which made every option look equally likely. Icons alone were
+ * compact but left Finish and Quit hard to tell apart on a phone — a word each
+ * fixes that without the row growing.
+ *
+ * `hint` carries the longer explanation for hover and screen readers.
  */
-function IconAction({ icon, label, onClick, tone = 'default' }) {
+function IconAction({ icon, label, hint, onClick, tone = 'default' }) {
 	const tones = {
 		default:
 			'text-[var(--c-text-soft)] border-[var(--c-border)] hover:bg-[var(--c-surface-sunk)]',
@@ -33,12 +35,14 @@ function IconAction({ icon, label, onClick, tone = 'default' }) {
 		<button
 			type="button"
 			onClick={onClick}
-			title={label}
-			aria-label={label}
-			className={`grid place-items-center w-9 h-9 rounded-[var(--radius-sm)] border bg-[var(--c-surface)]
+			title={hint || label}
+			aria-label={hint || label}
+			className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-1 py-2
+				rounded-[var(--radius-sm)] border bg-[var(--c-surface)]
 				transition-colors duration-[var(--dur-quick)] active:scale-95 ${tones[tone]}`}
 		>
 			<Icon icon={icon} size="sm" />
+			<span className="text-[0.65rem] font-semibold leading-none">{label}</span>
 		</button>
 	);
 }
@@ -91,7 +95,90 @@ export default function HabitEditPanel({ habit, onClose }) {
 		);
 
 	return (
-		<div className="mt-3 space-y-5">
+		<div className="mt-3 space-y-4">
+			{/* Lifecycle first, straight under the card's own summary, so the form
+			    below is only ever about the habit's settings. */}
+			<div className="pb-4 border-b border-[var(--c-border)]">
+				{confirmingDelete ? (
+					<div className="space-y-2">
+						<p className="text-sm text-[var(--c-danger)]">
+							Erase this habit and its whole history? This cannot be undone.
+						</p>
+						<div className="flex gap-2">
+							<ButtonComponent
+								onClick={() => deleteMutation.mutateAsync({ id: habit.id })}
+								variant="danger"
+								size="sm"
+							>
+								Delete forever
+							</ButtonComponent>
+							<ButtonComponent
+								onClick={() => setConfirmingDelete(false)}
+								variant="secondary"
+								size="sm"
+							>
+								Keep it
+							</ButtonComponent>
+						</div>
+					</div>
+				) : (
+					<div className="flex items-center gap-2">
+						{!isFinished &&
+							(isPaused ? (
+								<IconAction
+									icon="play"
+									label="Resume"
+									hint="Start counting this habit again"
+									onClick={() => run(resumeMutation, { id: habit.id })}
+								/>
+							) : (
+								<IconAction
+									icon="pause"
+									label="Pause"
+									hint="Pause — paused days are not counted as misses"
+									onClick={() => run(pauseMutation, { id: habit.id })}
+								/>
+							))}
+
+						{!isFinished && (
+							<>
+								<IconAction
+									icon="check-circle"
+									label="Finish"
+									hint="Mark finished — streaks are kept and frozen"
+									onClick={() =>
+										run(endMutation, { id: habit.id, reason: END_REASON.COMPLETED })
+									}
+								/>
+								<IconAction
+									icon="x-circle"
+									label="Quit"
+									hint="Quit — streaks are kept and frozen"
+									onClick={() => run(endMutation, { id: habit.id, reason: END_REASON.QUIT })}
+								/>
+							</>
+						)}
+
+						{isFinished && (
+							<IconAction
+								icon="arrow-path"
+								label="Restart"
+								hint="Pick it back up and move it to your active habits"
+								onClick={() => run(reopenMutation, { id: habit.id })}
+							/>
+						)}
+
+						<IconAction
+							icon="trash"
+							label="Delete"
+							hint="Delete this habit and everything recorded against it"
+							tone="danger"
+							onClick={() => setConfirmingDelete(true)}
+						/>
+					</div>
+				)}
+			</div>
+
 			<div className="space-y-4">
 				<label className="block">
 					<span className="form-label">Details</span>
@@ -157,88 +244,19 @@ export default function HabitEditPanel({ habit, onClose }) {
 				)}
 
 				{error && <p className="text-sm text-[var(--c-danger)]">{error}</p>}
-
-				<div className="flex items-center gap-2">
-					<ButtonComponent onClick={handleSave} variant="primary" size="sm">
-						Save changes
-					</ButtonComponent>
-					<IconAction icon="x" label="Cancel" onClick={onClose} />
-				</div>
 			</div>
 
-			<div className="pt-3 border-t border-[var(--c-border)]">
-				{confirmingDelete ? (
-					<div className="space-y-2">
-						<p className="text-sm text-[var(--c-danger)]">
-							Erase this habit and its whole history? This cannot be undone.
-						</p>
-						<div className="flex gap-2">
-							<ButtonComponent
-								onClick={() => deleteMutation.mutateAsync({ id: habit.id })}
-								variant="danger"
-								size="sm"
-							>
-								Delete forever
-							</ButtonComponent>
-							<ButtonComponent
-								onClick={() => setConfirmingDelete(false)}
-								variant="secondary"
-								size="sm"
-							>
-								Keep it
-							</ButtonComponent>
-						</div>
-					</div>
-				) : (
-					<div className="flex items-center gap-2">
-						{!isFinished &&
-							(isPaused ? (
-								<IconAction
-									icon="play"
-									label="Resume"
-									onClick={() => run(resumeMutation, { id: habit.id })}
-								/>
-							) : (
-								<IconAction
-									icon="pause"
-									label="Pause — paused days are not counted as misses"
-									onClick={() => run(pauseMutation, { id: habit.id })}
-								/>
-							))}
-
-						{!isFinished && (
-							<>
-								<IconAction
-									icon="check-circle"
-									label="Mark finished — streaks are kept and frozen"
-									onClick={() =>
-										run(endMutation, { id: habit.id, reason: END_REASON.COMPLETED })
-									}
-								/>
-								<IconAction
-									icon="x-circle"
-									label="Quit — streaks are kept and frozen"
-									onClick={() => run(endMutation, { id: habit.id, reason: END_REASON.QUIT })}
-								/>
-							</>
-						)}
-
-						{isFinished && (
-							<IconAction
-								icon="arrow-path"
-								label="Pick it back up"
-								onClick={() => run(reopenMutation, { id: habit.id })}
-							/>
-						)}
-
-						<IconAction
-							icon="trash"
-							label="Delete this habit and its history"
-							tone="danger"
-							onClick={() => setConfirmingDelete(true)}
-						/>
-					</div>
-				)}
+			<div className="flex gap-2 pt-3 border-t border-[var(--c-border)]">
+				<div className="flex-1">
+					<ButtonComponent onClick={handleSave} variant="primary" size="sm" fullWidth>
+						Save
+					</ButtonComponent>
+				</div>
+				<div className="flex-1">
+					<ButtonComponent onClick={onClose} variant="secondary" size="sm" fullWidth>
+						Cancel
+					</ButtonComponent>
+				</div>
 			</div>
 		</div>
 	);

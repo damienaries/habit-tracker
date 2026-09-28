@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	FREQUENCY,
+	isBonusOn,
 	isExpectedOn,
 	shouldAppearOn,
 	weeklyTarget,
@@ -75,15 +76,16 @@ describe('shouldAppearOn', () => {
 		expect(shouldAppearOn(habit, TUE_JUN_4)).toBe(true);
 	});
 
-	it('hides a flexible weekly habit once its target is met', () => {
+	it('keeps a flexible weekly habit on the card after its target is met', () => {
+		// It stays so an extra session can be logged — see isBonusOn for why it
+		// stops counting toward the day.
 		const habit = {
 			frequency: FREQUENCY.WEEKLY,
 			timesPerPeriod: 2,
 			startDate: MON_JUN_3,
 			completions: ['2024-06-03', '2024-06-04'],
 		};
-		expect(shouldAppearOn(habit, WED_JUN_5, 2)).toBe(false);
-		expect(shouldAppearOn(habit, WED_JUN_5, 1)).toBe(true);
+		expect(shouldAppearOn(habit, WED_JUN_5)).toBe(true);
 	});
 
 	it('still shows a completed day after the weekly target is met', () => {
@@ -179,5 +181,32 @@ describe('weeklyTarget for weeks the habit was not live', () => {
 		const habit = weekly({ startDate: new Date(2024, 5, 6) });
 		expect(weeklyTarget(habit, MON_JUN_3)).toBe(0);
 		expect(weeklyTarget(habit, new Date(2024, 5, 10))).toBe(3);
+	});
+});
+
+describe('isBonusOn', () => {
+	const gym = completions => ({
+		frequency: FREQUENCY.WEEKLY,
+		timesPerPeriod: 2,
+		startDate: MON_JUN_3,
+		completions,
+	});
+
+	it('is extra credit once the weekly target is met', () => {
+		expect(isBonusOn(gym(['2024-06-03', '2024-06-04']), WED_JUN_5, 2)).toBe(true);
+	});
+
+	it('is still owed while under target', () => {
+		expect(isBonusOn(gym(['2024-06-03']), WED_JUN_5, 1)).toBe(false);
+	});
+
+	it('is not bonus on a day it was actually done', () => {
+		const habit = gym(['2024-06-03', '2024-06-04', '2024-06-05']);
+		expect(isBonusOn(habit, WED_JUN_5, 3)).toBe(false);
+	});
+
+	it('never applies to daily or fixed-day habits', () => {
+		const daily = { frequency: FREQUENCY.DAILY, startDate: MON_JUN_3, completions: [] };
+		expect(isBonusOn(daily, WED_JUN_5, 99)).toBe(false);
 	});
 });

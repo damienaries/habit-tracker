@@ -9,6 +9,9 @@ export const FREQUENCY = {
 	WEEKLY: 'weekly',
 };
 
+// Every habit gets a real block by default rather than a null placeholder.
+export const DEFAULT_DURATION_MINUTES = 30;
+
 export const END_REASON = {
 	COMPLETED: 'completed',
 	QUIT: 'quit',
@@ -53,19 +56,32 @@ export function isExpectedOn(habit, date) {
 }
 
 // Should the habit show on this day's card? Separate question from
-// isExpectedOn: a flexible weekly habit appears every day until its target for
-// that week is met, even though no single day is required.
-export function shouldAppearOn(habit, date, completionsThisWeek = 0) {
+// isExpectedOn: a flexible weekly habit has no single required day, but it is
+// still offered every day — including after its target is met, so an extra
+// session can be logged rather than the card vanishing.
+export function shouldAppearOn(habit, date) {
 	if (!isActiveOn(habit, date)) return false;
 
 	if (habit.frequency === FREQUENCY.SPECIFIC_DAYS) {
 		return (habit.daysOfWeek || []).includes(new Date(date).getDay());
 	}
 
-	if (habit.frequency !== FREQUENCY.WEEKLY) return true;
+	return true;
+}
 
-	const doneToday = (habit.completions || []).includes(getLocalDateKey(date));
-	return doneToday || completionsThisWeek < (habit.timesPerPeriod || 1);
+/**
+ * Is this offered as extra credit rather than owed?
+ *
+ * A flexible habit that has already hit its weekly target still shows, but it
+ * must not count against the day — you finished what you set out to do, and
+ * leaving it in the denominator would make Friday look like a failure for not
+ * doing a fifth workout you never promised.
+ */
+export function isBonusOn(habit, date, completionsThisWeek = 0) {
+	if (habit.frequency !== FREQUENCY.WEEKLY) return false;
+	if ((habit.completions || []).includes(getLocalDateKey(date))) return false;
+
+	return completionsThisWeek >= (habit.timesPerPeriod || 1);
 }
 
 // How many completions count as a full week for this habit. A week the habit

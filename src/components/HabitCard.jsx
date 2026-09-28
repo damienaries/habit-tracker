@@ -29,15 +29,31 @@ function formatFrequency(habit) {
 }
 
 // Ticking a flexible habit used to move nothing until the whole week's target
-// landed. Dots fill on every completion.
+// landed. Dots fill on every completion, and anything past the target gets its
+// own dot in the accent colour rather than being discarded.
 function WeekDots({ completed, total }) {
+	const extra = Math.max(0, completed - total);
+
 	return (
-		<span className="inline-flex items-center gap-1" aria-label={`${completed} of ${total} this week`}>
+		<span
+			className="inline-flex items-center gap-1"
+			aria-label={`${completed} of ${total} this week`}
+		>
 			{Array.from({ length: total }, (_, i) => (
 				<span
 					key={i}
 					className="w-[7px] h-[7px] rounded-full transition-colors duration-[var(--dur-base)]"
 					style={{ background: i < completed ? 'var(--c-done)' : 'var(--c-idle)' }}
+				/>
+			))}
+
+			{extra > 0 && <span aria-hidden="true" className="text-[var(--c-accent)] text-[0.7rem] leading-none">+</span>}
+
+			{Array.from({ length: extra }, (_, i) => (
+				<span
+					key={`extra-${i}`}
+					className="w-[7px] h-[7px] rounded-full"
+					style={{ background: 'var(--c-accent)' }}
 				/>
 			))}
 		</span>
@@ -70,6 +86,7 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 	const completions = useMemo(() => habit.completions || [], [habit.completions]);
 	const alreadyDone = completions.includes(getLocalDateKey(date));
 
+
 	// Stable per habit so the colour never shuffles between renders.
 	const habitHue = useMemo(() => {
 		const key = String(habit.id);
@@ -101,6 +118,10 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 		return { completed, total, isWeekComplete: completed >= total };
 	}, [isWeeklyHabit, completions, date, habit.timesPerPeriod]);
 
+	// Offered but not owed: the weekly target is already met, so today's session
+	// would be extra rather than outstanding.
+	const isExtra = Boolean(weeklyProgress?.isWeekComplete) && !alreadyDone;
+
 	// While editing the card goes neutral: a green "done" ground under a form
 	// makes every field harder to read.
 	const surface = isEditing
@@ -113,7 +134,7 @@ export default function HabitCard({ habit, date, dayCard = true, editing = false
 		<div
 			className={`relative overflow-hidden rounded-[var(--radius)] w-full p-3.5 border
 				transition-colors duration-[var(--dur-base)] ease-[var(--ease-out)]
-				${surface} ${isPaused ? 'opacity-60' : ''}`}
+				${surface} ${isPaused ? 'opacity-60' : ''} ${isExtra ? 'opacity-70' : ''}`}
 		>
 			<span
 				aria-hidden="true"

@@ -1,5 +1,5 @@
 import { getLocalDateKey, getStartOfWeek, isSameDay } from '../utils/dateHelpers';
-import { shouldAppearOn } from './schedule';
+import { shouldAppearOn, isBonusOn } from './schedule';
 
 export function completionsInWeekOf(habit, date) {
 	const weekStart = getStartOfWeek(date);
@@ -16,7 +16,12 @@ export function completionsInWeekOf(habit, date) {
 
 // Which of these habits belong on this day's card.
 export function habitsForDay(habits, date) {
-	return habits.filter(habit => shouldAppearOn(habit, date, completionsInWeekOf(habit, date)));
+	return habits.filter(habit => shouldAppearOn(habit, date));
+}
+
+// Habits offered today that are not owed today — a weekly target already met.
+export function isExtraCredit(habit, date) {
+	return isBonusOn(habit, date, completionsInWeekOf(habit, date));
 }
 
 /**
@@ -40,6 +45,8 @@ export function getDayItems(habits, date, todos = []) {
 		kind: 'habit',
 		label: habit.name,
 		done: (habit.completions || []).includes(dateKey),
+		// Offered, but not owed — see isBonusOn.
+		bonus: isExtraCredit(habit, date),
 	}));
 
 	return [...todoItems, ...habitItems];
@@ -65,9 +72,13 @@ export function getDayProgress(habits, date, today = new Date(), todos = []) {
 	const dateKey = getLocalDateKey(date);
 	const dayTodos = todos.filter(todo => todo.dueDate === dateKey);
 
-	const total = onThisDay.length + dayTodos.length;
+	// Extra-credit habits are shown but excluded from the denominator, so a met
+	// target never drags a day down.
+	const owed = onThisDay.filter(habit => !isExtraCredit(habit, date));
+
+	const total = owed.length + dayTodos.length;
 	const done =
-		onThisDay.filter(habit => (habit.completions || []).includes(dateKey)).length +
+		owed.filter(habit => (habit.completions || []).includes(dateKey)).length +
 		dayTodos.filter(todo => Boolean(todo.completedOn)).length;
 
 	const isToday = isSameDay(date, today);

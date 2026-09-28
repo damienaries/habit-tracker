@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TabNavigation from './components/TabNavigation';
 import Header from './components/Header';
 import Today from './pages/Today';
-import MonthView from './pages/MonthView';
+import CalendarView from './pages/CalendarView';
 import CreateHabitView from './pages/CreateHabitView';
 import AllHabitsView from './pages/AllHabitsView';
 import { UserProvider, useUser } from './contexts/UserContext';
@@ -10,7 +10,8 @@ import Onboarding from './components/Onboarding';
 
 const routes = [
 	{ path: '/', element: <Today /> },
-	{ path: '/month', element: <MonthView /> },
+	{ path: '/week', element: <CalendarView view="week" /> },
+	{ path: '/month', element: <CalendarView view="month" /> },
 	{ path: '/create', element: <CreateHabitView /> },
 	{ path: '/habits', element: <AllHabitsView /> },
 ];
